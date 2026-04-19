@@ -155,20 +155,7 @@
   align-self: center;
 }
 
-/* ── Privacy ── */
-.privacy-section {
-  padding: 2rem 2rem;
-  border-top: 1px solid var(--line);
-}
-.privacy-inner {
-  max-width: 1040px; margin: 0 auto;
-  display: flex; align-items: flex-start; gap: 1rem;
-  background: var(--paper-2); border-radius: var(--radius-lg);
-  padding: 1.25rem 1.5rem;
-}
-.prv-icon { font-size: 1.25rem; flex-shrink: 0; margin-top: 2px; }
-.prv-title { font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 4px; }
-.prv-desc { font-size: 12px; color: var(--ink-3); line-height: 1.6; }
+
 
 /* ── Responsive ── */
 @media (max-width: 768px) {
