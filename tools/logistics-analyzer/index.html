@@ -1,1 +1,156 @@
-.
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>物流數據分析 — OpsHub</title>
+  <link rel="stylesheet" href="../../shared.css" />
+  <link rel="stylesheet" href="tool.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+  <div class="page-bg"></div>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="../../index.html" class="logo">
+        <span class="logo-icon">⬡</span>
+        <span class="logo-text">OpsHub</span>
+      </a>
+      <nav class="site-nav">
+        <a href="../../index.html">首頁</a>
+        <a href="index.html" class="nav-active">物流分析</a>
+        <a href="../claims-processor/index.html">壓賠整合</a>
+        <div class="font-size-control" title="調整字體大小">
+          <span class="fsc-label">字級</span>
+          <div class="fsc-divider"></div>
+          <button class="fsc-btn" data-size="fs-sm" title="小">A</button>
+          <button class="fsc-btn active" data-size="fs-md" title="中" style="font-size:14px">A</button>
+          <button class="fsc-btn" data-size="fs-lg" title="大" style="font-size:16px">A</button>
+          <button class="fsc-btn" data-size="fs-xl" title="特大" style="font-size:18px">A</button>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main class="tool-main">
+    <div class="breadcrumb">
+      <a href="../../index.html">OpsHub</a>
+      <span>/</span>
+      <span>物流營運數據分析助手</span>
+    </div>
+
+    <section class="tool-hero">
+      <div class="tool-hero-tag">AI 驅動分析</div>
+      <h1 class="tool-hero-title">物流營運<br><em>數據分析助手</em></h1>
+      <p class="tool-hero-sub">上傳 CSV 或 Excel 報表，Claude AI 自動萃取核心問題、異常預警與改善建議</p>
+    </section>
+
+    <div class="app-card">
+
+      <div class="upload-zone" id="dropzone">
+        <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" />
+        <div class="upload-inner">
+          <div class="upload-glyph">↑</div>
+          <p class="upload-primary">拖放檔案至此，或點擊選擇</p>
+          <p class="upload-secondary">支援 CSV、XLSX、XLS 格式</p>
+        </div>
+      </div>
+
+      <div class="file-info-bar" id="fileInfo" style="display:none">
+        <span class="fi-icon" id="fileIcon">📄</span>
+        <div class="fi-meta">
+          <div class="fi-name" id="fileName"></div>
+          <div class="fi-size" id="fileSize"></div>
+        </div>
+        <button class="fi-remove" id="removeFile" title="移除檔案">✕</button>
+      </div>
+
+      <div class="config-block">
+        <div class="config-title">分析項目</div>
+        <div class="checkbox-grid">
+          <label class="cb-item"><input type="checkbox" checked id="chk1" /><span>資料概覽</span></label>
+          <label class="cb-item"><input type="checkbox" checked id="chk2" /><span>核心問題 Top 3</span></label>
+          <label class="cb-item"><input type="checkbox" checked id="chk3" /><span>類別佔比分析</span></label>
+          <label class="cb-item"><input type="checkbox" checked id="chk4" /><span>時效與品質評估</span></label>
+          <label class="cb-item"><input type="checkbox" checked id="chk5" /><span>異常預警偵測</span></label>
+          <label class="cb-item"><input type="checkbox" checked id="chk6" /><span>改善建議</span></label>
+        </div>
+      </div>
+
+      <div class="config-block">
+        <div class="config-title">Anthropic API Key</div>
+        <input type="password" id="apiKey" class="api-input" placeholder="sk-ant-..." />
+        <p class="api-note">API Key 僅在本機瀏覽器中使用，不會上傳至任何伺服器。</p>
+      </div>
+
+      <div class="error-msg" id="errorMsg"></div>
+      <button class="btn-run" id="analyzeBtn" disabled>選擇檔案後開始分析</button>
+
+      <div class="loading-block" id="loadingDiv" style="display:none">
+        <div class="loading-spinner"></div>
+        <p class="loading-text" id="loadingText">正在解析資料結構...</p>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      </div>
+
+      <div class="results-block" id="resultsDiv" style="display:none">
+        <div class="result-tabs" id="resultTabs">
+          <button class="tab-btn active" data-tab="summary">數據總結</button>
+          <button class="tab-btn" data-tab="top3">核心問題</button>
+          <button class="tab-btn" data-tab="warning">異常警告</button>
+          <button class="tab-btn" data-tab="suggestion">改善建議</button>
+          <button class="tab-btn" data-tab="stats">詳細統計</button>
+        </div>
+        <div class="tab-content active" id="tab-summary"></div>
+        <div class="tab-content" id="tab-top3"></div>
+        <div class="tab-content" id="tab-warning"></div>
+        <div class="tab-content" id="tab-suggestion"></div>
+        <div class="tab-content" id="tab-stats"></div>
+        <div class="followup-block">
+          <div class="followup-title">深入追問</div>
+          <div class="quick-asks" id="quickAsks"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="tool-switch-bar">
+      <span class="tsb-label">切換工具</span>
+      <a href="../claims-processor/index.html" class="tsb-link">
+        <span>📋</span> 壓賠資料整合工具 →
+      </a>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-top">
+        <div class="footer-brand"><span class="logo-icon">⬡</span><span class="logo-text">OpsHub</span></div>
+        <div class="footer-links">
+          <a href="../../index.html">首頁</a>
+          <a href="../claims-processor/index.html">壓賠整合</a>
+        </div>
+      </div>
+      <div class="footer-bottom"><p>© 2025 OpsHub · 物流營運數據分析助手</p></div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+  <script>
+    // ── Font size control ──────────────────────────────────
+    const SIZE_MAP = { 'fs-sm': '13px', 'fs-md': '15px', 'fs-lg': '18px', 'fs-xl': '21px' };
+    const STORAGE_KEY = 'opshub_fontsize';
+    const btns = document.querySelectorAll('.fsc-btn[data-size]');
+
+    function applySize(size) {
+      document.documentElement.style.fontSize = SIZE_MAP[size] || '15px';
+      btns.forEach(b => b.classList.toggle('active', b.dataset.size === size));
+      localStorage.setItem(STORAGE_KEY, size);
+    }
+
+    const saved = localStorage.getItem(STORAGE_KEY) || 'fs-md';
+    applySize(saved);
+    btns.forEach(btn => btn.addEventListener('click', () => applySize(btn.dataset.size)));
+  </script>
+</body>
+</html>
