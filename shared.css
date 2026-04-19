@@ -107,7 +107,8 @@ body {
   border-bottom: 1.5px solid transparent;
 }
 .site-nav a:hover { color: var(--ink); }
-.site-nav a.nav-active {
+.site-nav a.nav-active,
+.site-nav a.tab-active {
   color: var(--ink); font-weight: 500;
   border-bottom-color: var(--ink);
 }
