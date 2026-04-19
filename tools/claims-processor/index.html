@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>壓賠整合工具 — OpsHub</title>
+  <link rel="stylesheet" href="../../shared.css" />
+  <link rel="stylesheet" href="tool.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+  <div class="page-bg"></div>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="../../index.html" class="logo">
+        <span class="logo-icon">⬡</span>
+        <span class="logo-text">OpsHub</span>
+      </a>
+      <nav class="site-nav">
+        <a href="../../index.html">首頁</a>
+        <a href="../logistics-analyzer/index.html">物流分析</a>
+        <a href="index.html" class="nav-active">壓賠整合</a>
+        <div class="font-size-control" title="調整字體大小">
+          <span class="fsc-label">字級</span>
+          <div class="fsc-divider"></div>
+          <button class="fsc-btn" data-size="fs-sm" title="小">A</button>
+          <button class="fsc-btn active" data-size="fs-md" title="中" style="font-size:14px">A</button>
+          <button class="fsc-btn" data-size="fs-lg" title="大" style="font-size:16px">A</button>
+          <button class="fsc-btn" data-size="fs-xl" title="特大" style="font-size:18px">A</button>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main class="tool-main">
+    <div class="breadcrumb">
+      <a href="../../index.html">OpsHub</a>
+      <span>/</span>
+      <span>壓賠資料整合工具</span>
+    </div>
+
+    <section class="tool-hero">
+      <div class="tool-hero-tag">SOP 自動化</div>
+      <h1 class="tool-hero-title">壓賠資料<br><em>整合工具</em></h1>
+      <p class="tool-hero-sub">上傳四個來源檔案，系統自動執行六步驟 SOP，匯出標準壓賠 Excel 報表</p>
+    </section>
+
+    <!-- SOP Strip -->
+    <div class="sop-strip">
+      <div class="sop-step"><span class="sop-num">01</span><span class="sop-label">基礎理賠對應</span></div>
+      <div class="sop-arrow">→</div>
+      <div class="sop-step"><span class="sop-num">02</span><span class="sop-label">查件資料對應</span></div>
+      <div class="sop-arrow">→</div>
+      <div class="sop-step"><span class="sop-num">03</span><span class="sop-label">消費者姓名判斷</span></div>
+      <div class="sop-arrow">→</div>
+      <div class="sop-step"><span class="sop-num">04</span><span class="sop-label">壓賠店號判斷</span></div>
+      <div class="sop-arrow">→</div>
+      <div class="sop-step"><span class="sop-num">05</span><span class="sop-label">進店日判斷</span></div>
+      <div class="sop-arrow">→</div>
+      <div class="sop-step"><span class="sop-num">06</span><span class="sop-label">店舖歸屬關聯</span></div>
+    </div>
+
+    <div class="app-card">
+
+      <div class="upload-section">
+        <div class="section-title">上傳來源檔案</div>
+        <div class="upload-grid">
+          <div class="upload-slot" id="slot-claims">
+            <input type="file" id="file-claims" accept=".csv,.xlsx,.xls" />
+            <div class="slot-icon">①</div>
+            <div class="slot-name">理賠檔案</div>
+            <div class="slot-hint">含狀態、寄件店號、取件店號、條碼等</div>
+            <div class="slot-status" id="status-claims"></div>
+          </div>
+          <div class="upload-slot" id="slot-query">
+            <input type="file" id="file-query" accept=".csv,.xlsx,.xls" />
+            <div class="slot-icon">②</div>
+            <div class="slot-name">大批查件</div>
+            <div class="slot-hint">含廠商訂編、寄件人、取件人、進店日期等</div>
+            <div class="slot-status" id="status-query"></div>
+          </div>
+          <div class="upload-slot" id="slot-store">
+            <input type="file" id="file-store" accept=".csv,.xlsx,.xls" />
+            <div class="slot-icon">③</div>
+            <div class="slot-name">店鋪主檔</div>
+            <div class="slot-hint">含店名、店型、所別、課別等</div>
+            <div class="slot-status" id="status-store"></div>
+          </div>
+          <div class="upload-slot" id="slot-prevstore">
+            <input type="file" id="file-prevstore" accept=".csv,.xlsx,.xls" />
+            <div class="slot-icon">④</div>
+            <div class="slot-name">前月店鋪主檔</div>
+            <div class="slot-hint">備援用，店號找不到時自動切換</div>
+            <div class="slot-status" id="status-prevstore"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mapping-section" id="mappingSection" style="display:none">
+        <div class="section-title">欄位對應確認 <span class="badge badge-info">請確認後再執行</span></div>
+        <div id="mappingContent"></div>
+      </div>
+
+      <div class="error-msg" id="errorMsg"></div>
+      <button class="btn-run" id="runBtn" disabled>請上傳全部四個檔案後執行</button>
+
+      <div class="progress-block" id="progressBlock" style="display:none">
+        <div class="progress-steps" id="progressSteps"></div>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      </div>
+
+      <div class="result-block" id="resultBlock" style="display:none">
+        <div class="result-header">
+          <div class="result-title">處理完成</div>
+          <button class="btn-export" id="exportBtn">↓ 匯出 Excel</button>
+        </div>
+        <div class="result-stats" id="resultStats"></div>
+        <div class="preview-wrap">
+          <div class="preview-title">資料預覽（前 10 筆）</div>
+          <div class="table-scroll" id="previewTable"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="tool-switch-bar">
+      <span class="tsb-label">切換工具</span>
+      <a href="../logistics-analyzer/index.html" class="tsb-link">
+        <span>📊</span> 物流營運數據分析助手 →
+      </a>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-top">
+        <div class="footer-brand"><span class="logo-icon">⬡</span><span class="logo-text">OpsHub</span></div>
+        <div class="footer-links">
+          <a href="../../index.html">首頁</a>
+          <a href="../logistics-analyzer/index.html">物流分析</a>
+        </div>
+      </div>
+      <div class="footer-bottom"><p>© 2025 OpsHub · 壓賠資料整合工具</p></div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+  <script>
+    // ── Font size control ──────────────────────────────────
+    const SIZE_MAP = { 'fs-sm': '13px', 'fs-md': '15px', 'fs-lg': '18px', 'fs-xl': '21px' };
+    const STORAGE_KEY = 'opshub_fontsize';
+    const btns = document.querySelectorAll('.fsc-btn[data-size]');
+
+    function applySize(size) {
+      document.documentElement.style.fontSize = SIZE_MAP[size] || '15px';
+      btns.forEach(b => b.classList.toggle('active', b.dataset.size === size));
+      localStorage.setItem(STORAGE_KEY, size);
+    }
+
+    const saved = localStorage.getItem(STORAGE_KEY) || 'fs-md';
+    applySize(saved);
+    btns.forEach(btn => btn.addEventListener('click', () => applySize(btn.dataset.size)));
+  </script>
+</body>
+</html>
