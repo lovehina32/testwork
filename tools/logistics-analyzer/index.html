@@ -23,6 +23,7 @@
         <a href="../../home.html">首頁</a>
         <a href="../../home.html?tab=frontline" class="nav-active">一線客服人員</a>
         <a href="../../home.html?tab=vendor">廠商客服人員</a>
+        <a href="../../admin.html" id="nav-admin" style="display:none;color:var(--warn)">帳號管理</a>
         <div class="font-size-control" title="調整字體大小">
           <span class="fsc-label">字級</span>
           <div class="fsc-divider"></div>
@@ -159,10 +160,8 @@
     (function(){
       const s = AUTH.getSession();
       if (s && s.role === 'admin') {
-        const nav = document.querySelector('.site-nav');
-        const a = document.createElement('a');
-        a.href = '../../admin.html'; a.textContent = '帳號管理'; a.style.color = 'var(--warn)';
-        nav.insertBefore(a, nav.querySelector('.btn-logout'));
+        const el = document.getElementById('nav-admin');
+        if (el) el.style.display = '';
       }
     })();
   </script>
