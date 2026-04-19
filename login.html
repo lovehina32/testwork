@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OpsHub — 登入</title>
+  <link rel="stylesheet" href="shared.css" />
+  <style>
+    .login-wrap {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+    .login-card {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      padding: 2.5rem 2rem;
+      width: 100%;
+      max-width: 380px;
+      box-shadow: 0 4px 24px rgba(14,14,14,0.08);
+    }
+    .login-logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 2rem;
+    }
+    .login-logo-icon { font-size: 22px; }
+    .login-logo-text {
+      font-family: var(--font-mono);
+      font-size: 18px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      color: var(--ink);
+    }
+    .login-title {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 0.4rem;
+    }
+    .login-sub {
+      font-size: 0.87em;
+      color: var(--ink-3);
+      margin-bottom: 2rem;
+    }
+    .field { margin-bottom: 1.1rem; }
+    .field label {
+      display: block;
+      font-size: 0.8em;
+      font-family: var(--font-mono);
+      color: var(--ink-3);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .field input {
+      width: 100%;
+      padding: 10px 12px;
+      font-size: 0.93em;
+      font-family: var(--font-body);
+      background: var(--paper);
+      border: 1px solid var(--paper-3);
+      border-radius: var(--radius);
+      color: var(--ink);
+      transition: border-color 0.15s, box-shadow 0.15s;
+      outline: none;
+    }
+    .field input:focus {
+      border-color: var(--ink-3);
+      box-shadow: 0 0 0 3px rgba(14,14,14,0.06);
+    }
+    .field input.error-field {
+      border-color: var(--danger);
+      box-shadow: 0 0 0 3px rgba(185,28,28,0.08);
+    }
+    .login-error {
+      display: none;
+      font-size: 0.8em;
+      color: var(--danger);
+      background: var(--danger-bg);
+      border-radius: var(--radius);
+      padding: 9px 12px;
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+    .btn-login {
+      width: 100%;
+      padding: 12px;
+      font-size: 0.93em;
+      font-weight: 500;
+      background: var(--ink);
+      color: var(--paper);
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      font-family: var(--font-body);
+      margin-top: 0.5rem;
+      letter-spacing: 0.02em;
+    }
+    .btn-login:hover { background: var(--ink-2); }
+    .btn-login:active { transform: scale(0.99); }
+    .btn-login:disabled { background: var(--paper-3); color: var(--ink-4); cursor: not-allowed; }
+    .login-footer {
+      margin-top: 1.5rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--line);
+      font-size: 0.73em;
+      font-family: var(--font-mono);
+      color: var(--ink-4);
+      text-align: center;
+    }
+    .shake {
+      animation: shake 0.4s ease;
+    }
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      20%      { transform: translateX(-8px); }
+      40%      { transform: translateX(8px); }
+      60%      { transform: translateX(-5px); }
+      80%      { transform: translateX(5px); }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-bg"></div>
+
+  <div class="login-wrap">
+    <div class="login-card" id="loginCard">
+
+      <div class="login-logo">
+        <span class="login-logo-icon">⬡</span>
+        <span class="login-logo-text">OpsHub</span>
+      </div>
+
+      <h1 class="login-title">歡迎回來</h1>
+      <p class="login-sub">請登入以使用物流營運工具集</p>
+
+      <div class="login-error" id="loginError">帳號或密碼錯誤，請重新輸入</div>
+
+      <div class="field">
+        <label for="username">帳號</label>
+        <input type="text" id="username" placeholder="請輸入帳號" autocomplete="username" />
+      </div>
+
+      <div class="field">
+        <label for="password">密碼</label>
+        <input type="password" id="password" placeholder="請輸入密碼" autocomplete="current-password" />
+      </div>
+
+      <button class="btn-login" id="loginBtn">登入</button>
+
+      <div class="login-footer">
+        OpsHub · 物流營運自動化工具集<br>
+        © 2025 · 僅限授權人員使用
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // ── 帳號設定（可新增多組）──────────────────────────────
+    const USERS = [
+      { username: 'admin', password: 'admin' }
+    ];
+
+    const SESSION_KEY = 'opshub_auth';
+    const SESSION_TTL = 8 * 60 * 60 * 1000; // 8 小時
+
+    // 已登入則直接跳轉
+    const session = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null');
+    if (session && Date.now() - session.ts < SESSION_TTL) {
+      window.location.replace('home.html');
+    }
+
+    // ── Login logic ───────────────────────────────────────
+    const loginBtn  = document.getElementById('loginBtn');
+    const loginCard = document.getElementById('loginCard');
+    const errorEl   = document.getElementById('loginError');
+    const usernameEl = document.getElementById('username');
+    const passwordEl = document.getElementById('password');
+
+    function tryLogin() {
+      const u = usernameEl.value.trim();
+      const p = passwordEl.value;
+      const match = USERS.find(x => x.username === u && x.password === p);
+
+      if (match) {
+        loginBtn.disabled = true;
+        loginBtn.textContent = '登入中...';
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify({ user: u, ts: Date.now() }));
+        setTimeout(() => { window.location.replace('home.html'); }, 400);
+      } else {
+        errorEl.style.display = 'block';
+        usernameEl.classList.add('error-field');
+        passwordEl.classList.add('error-field');
+        loginCard.classList.remove('shake');
+        void loginCard.offsetWidth;
+        loginCard.classList.add('shake');
+        passwordEl.value = '';
+        passwordEl.focus();
+        setTimeout(() => {
+          usernameEl.classList.remove('error-field');
+          passwordEl.classList.remove('error-field');
+        }, 2000);
+      }
+    }
+
+    loginBtn.addEventListener('click', tryLogin);
+    [usernameEl, passwordEl].forEach(el => {
+      el.addEventListener('keydown', e => { if (e.key === 'Enter') tryLogin(); });
+      el.addEventListener('input', () => { errorEl.style.display = 'none'; });
+    });
+
+    usernameEl.focus();
+  </script>
+</body>
+</html>
