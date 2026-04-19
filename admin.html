@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>帳號管理 — 日翊客服小工具</title>
+  <link rel="stylesheet" href="shared.css" />
+  <style>
+    .admin-main { max-width: 860px; margin: 0 auto; padding: 2rem 2rem 4rem; }
+    .admin-hero { margin-bottom: 2rem; }
+    .admin-hero-tag { display:inline-block; font-size:0.73em; font-family:var(--font-mono); letter-spacing:0.08em; text-transform:uppercase; color:var(--warn); border:1px solid var(--warn); padding:3px 10px; border-radius:2px; margin-bottom:0.75rem; }
+    .admin-hero-title { font-family:var(--font-display); font-size:clamp(1.6rem,4vw,2.4rem); font-weight:700; line-height:1.1; color:var(--ink); margin-bottom:0.5rem; }
+    .admin-hero-sub { font-size:0.87em; color:var(--ink-3); }
+    .app-card { background:#fff; border:1px solid var(--line); border-radius:var(--radius-lg); padding:2rem; box-shadow:0 2px 16px rgba(14,14,14,0.06); margin-bottom:1.5rem; }
+    .card-title { font-size:0.8em; font-family:var(--font-mono); letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-3); margin-bottom:1.25rem; display:flex; align-items:center; justify-content:space-between; }
+    /* Add user form */
+    .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:1rem; }
+    .form-group { display:flex; flex-direction:column; gap:5px; }
+    .form-group label { font-size:0.73em; font-family:var(--font-mono); color:var(--ink-3); letter-spacing:0.05em; text-transform:uppercase; }
+    .form-group input, .form-group select { padding:9px 12px; font-size:0.87em; font-family:var(--font-body); background:var(--paper); border:1px solid var(--paper-3); border-radius:var(--radius); color:var(--ink); outline:none; transition:border-color 0.15s; }
+    .form-group input:focus, .form-group select:focus { border-color:var(--ink-3); }
+    .form-section-label { font-size:0.73em; font-family:var(--font-mono); color:var(--ink-3); text-transform:uppercase; margin:0.75rem 0 0.5rem; letter-spacing:0.06em; }
+    .tools-check { display:flex; gap:16px; margin-bottom:1rem; }
+    .tools-check label { display:flex; align-items:center; gap:6px; font-size:0.87em; color:var(--ink-2); cursor:pointer; }
+    .tools-check input { accent-color:var(--accent); width:14px; height:14px; }
+    .btn-add { padding:10px 24px; font-size:0.87em; font-weight:500; background:var(--ink); color:var(--paper); border:none; border-radius:var(--radius); cursor:pointer; transition:background 0.15s; font-family:var(--font-body); }
+    .btn-add:hover { background:var(--ink-2); }
+    .form-msg { font-size:0.8em; margin-top:8px; padding:8px 12px; border-radius:var(--radius); display:none; }
+    .form-msg.ok  { background:var(--success-bg); color:var(--success); display:block; }
+    .form-msg.err { background:var(--danger-bg);  color:var(--danger);  display:block; }
+    /* User table */
+    .user-table { width:100%; border-collapse:collapse; font-size:0.87em; }
+    .user-table th { text-align:left; font-size:0.73em; font-family:var(--font-mono); color:var(--ink-3); border-bottom:1px solid var(--line); padding:8px 10px; font-weight:500; letter-spacing:0.04em; text-transform:uppercase; }
+    .user-table td { padding:10px 10px; border-bottom:1px solid rgba(14,14,14,0.05); vertical-align:middle; color:var(--ink); }
+    .user-table tr:last-child td { border-bottom:none; }
+    .user-table tr:hover td { background:var(--paper); }
+    .role-badge { display:inline-block; font-size:0.73em; font-family:var(--font-mono); padding:2px 8px; border-radius:2px; font-weight:500; }
+    .role-admin { background:var(--warn-bg); color:var(--warn); }
+    .role-user  { background:var(--accent-bg); color:var(--accent); }
+    .status-badge { display:inline-block; font-size:0.73em; font-family:var(--font-mono); padding:2px 8px; border-radius:2px; }
+    .status-on  { background:var(--success-bg); color:var(--success); }
+    .status-off { background:var(--danger-bg);  color:var(--danger); }
+    .tool-chip { display:inline-flex; align-items:center; gap:4px; font-size:0.73em; font-family:var(--font-mono); padding:2px 7px; border-radius:2px; background:var(--paper-2); color:var(--ink-3); margin:1px; }
+    .tool-chip.on { background:var(--success-bg); color:var(--success); }
+    /* Action buttons */
+    .action-btns { display:flex; gap:6px; flex-wrap:wrap; }
+    .btn-sm { padding:4px 12px; font-size:0.73em; font-family:var(--font-mono); border-radius:var(--radius); border:1px solid var(--line); background:transparent; color:var(--ink-2); cursor:pointer; transition:all 0.15s; white-space:nowrap; }
+    .btn-sm:hover { background:var(--paper-2); }
+    .btn-sm.toggle-on  { border-color:var(--success); color:var(--success); }
+    .btn-sm.toggle-on:hover  { background:var(--success-bg); }
+    .btn-sm.toggle-off { border-color:var(--danger); color:var(--danger); }
+    .btn-sm.toggle-off:hover { background:var(--danger-bg); }
+    .btn-sm.del { border-color:var(--danger); color:var(--danger); }
+    .btn-sm.del:hover { background:var(--danger-bg); }
+    /* Tool toggles in table */
+    .tool-toggle { display:inline-flex; align-items:center; gap:4px; font-size:0.73em; font-family:var(--font-mono); padding:3px 9px; border-radius:2px; border:1px solid var(--line); background:transparent; cursor:pointer; transition:all 0.15s; }
+    .tool-toggle.on  { border-color:var(--success); color:var(--success); background:var(--success-bg); }
+    .tool-toggle.off { border-color:var(--ink-4);   color:var(--ink-4);   background:var(--paper-2); }
+    /* Modal for password change */
+    .modal-bg { position:fixed; inset:0; background:rgba(14,14,14,0.4); z-index:200; display:none; align-items:center; justify-content:center; }
+    .modal-bg.open { display:flex; }
+    .modal { background:#fff; border-radius:var(--radius-lg); padding:1.75rem; width:100%; max-width:360px; border:1px solid var(--line); }
+    .modal h3 { font-size:1em; font-weight:500; color:var(--ink); margin-bottom:1rem; }
+    .modal-actions { display:flex; gap:8px; margin-top:1rem; justify-content:flex-end; }
+    .btn-cancel { padding:8px 16px; font-size:0.87em; background:transparent; border:1px solid var(--line); border-radius:var(--radius); cursor:pointer; color:var(--ink-3); font-family:var(--font-body); }
+    .btn-confirm { padding:8px 16px; font-size:0.87em; background:var(--ink); color:var(--paper); border:none; border-radius:var(--radius); cursor:pointer; font-family:var(--font-body); }
+    @media(max-width:640px){ .form-grid{grid-template-columns:1fr;} .admin-main{padding:1.5rem 1.25rem 3rem;} }
+  </style>
+</head>
+<body>
+  <script src="auth.js"></script>
+  <script>
+    // 管理員守衛
+    const _session = AUTH.guard('admin', 'login.html');
+  </script>
+  <div class="page-bg"></div>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="home.html" class="logo">
+        <span class="logo-icon">⬡</span>
+        <span class="logo-text">日翊客服小工具</span>
+      </a>
+      <nav class="site-nav">
+        <a href="home.html">首頁</a>
+        <a href="tools/logistics-analyzer/index.html">物流分析</a>
+        <a href="tools/claims-processor/index.html">壓賠整合</a>
+        <a href="admin.html" class="nav-active">帳號管理</a>
+        <button class="btn-logout" onclick="doLogout()">登出</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="admin-main">
+    <div class="breadcrumb">
+      <a href="home.html">日翊客服小工具</a>
+      <span>/</span>
+      <span>帳號管理</span>
+    </div>
+
+    <section class="admin-hero">
+      <div class="admin-hero-tag">管理員專用</div>
+      <h1 class="admin-hero-title">帳號管理</h1>
+      <p class="admin-hero-sub">新增使用人員帳號、設定工具權限、啟用或停用帳號</p>
+    </section>
+
+    <!-- 新增帳號 -->
+    <div class="app-card">
+      <div class="card-title">新增帳號</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>帳號名稱</label>
+          <input type="text" id="newUsername" placeholder="英數字，不可重複" />
+        </div>
+        <div class="form-group">
+          <label>顯示名稱</label>
+          <input type="text" id="newDisplayName" placeholder="如：王小明" />
+        </div>
+        <div class="form-group">
+          <label>密碼</label>
+          <input type="password" id="newPassword" placeholder="請設定密碼" />
+        </div>
+        <div class="form-group">
+          <label>角色</label>
+          <select id="newRole">
+            <option value="user">使用人員</option>
+            <option value="admin">管理員</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-section-label" id="toolsLabel">開放工具</div>
+      <div class="tools-check" id="toolsCheck">
+        <label><input type="checkbox" id="toolLogistics" checked /> 物流數據分析</label>
+        <label><input type="checkbox" id="toolClaims"    checked /> 壓賠資料整合</label>
+      </div>
+      <button class="btn-add" onclick="addUser()">新增帳號</button>
+      <div class="form-msg" id="formMsg"></div>
+    </div>
+
+    <!-- 帳號列表 -->
+    <div class="app-card">
+      <div class="card-title">
+        <span>帳號列表</span>
+        <span id="userCount" style="font-size:0.87em;color:var(--ink-3)"></span>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="user-table" id="userTable">
+          <thead>
+            <tr>
+              <th style="width:14%">帳號</th>
+              <th style="width:12%">顯示名稱</th>
+              <th style="width:10%">角色</th>
+              <th style="width:10%">狀態</th>
+              <th style="width:22%">工具權限</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="userTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- 修改密碼 Modal -->
+  <div class="modal-bg" id="pwModal">
+    <div class="modal">
+      <h3>修改密碼 — <span id="pwModalUser"></span></h3>
+      <div class="form-group">
+        <label>新密碼</label>
+        <input type="password" id="pwInput" placeholder="請輸入新密碼" style="margin-top:4px" />
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closePwModal()">取消</button>
+        <button class="btn-confirm" onclick="confirmPwChange()">確認變更</button>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .btn-logout { font-size:12px; font-family:var(--font-mono); padding:5px 12px; border-radius:var(--radius); border:1px solid var(--line); background:transparent; color:var(--ink-3); cursor:pointer; transition:all 0.15s; margin-left:0.5rem; }
+    .btn-logout:hover { background:var(--danger-bg); color:var(--danger); border-color:var(--danger); }
+  </style>
+
+  <script>
+    let _pwTarget = null;
+
+    function doLogout() {
+      if (confirm('確定要登出嗎？')) { AUTH.logout(); window.location.replace('login.html'); }
+    }
+
+    // 角色切換時隱藏/顯示工具開關
+    document.getElementById('newRole').addEventListener('change', function() {
+      const isAdmin = this.value === 'admin';
+      document.getElementById('toolsLabel').style.display = isAdmin ? 'none' : '';
+      document.getElementById('toolsCheck').style.display = isAdmin ? 'none' : '';
+    });
+
+    function addUser() {
+      const username    = document.getElementById('newUsername').value.trim();
+      const displayName = document.getElementById('newDisplayName').value.trim();
+      const password    = document.getElementById('newPassword').value;
+      const role        = document.getElementById('newRole').value;
+      const logistics   = document.getElementById('toolLogistics').checked;
+      const claims      = document.getElementById('toolClaims').checked;
+      const msgEl       = document.getElementById('formMsg');
+
+      if (!username || !password) { showFormMsg('err', '帳號與密碼為必填欄位'); return; }
+      if (!/^[a-zA-Z0-9_\u4e00-\u9fa5]+$/.test(username)) { showFormMsg('err', '帳號僅允許英數字、底線或中文'); return; }
+
+      const res = AUTH.addUser({ username, displayName: displayName || username, password, role, tools: { logistics, claims } });
+      if (res.ok) {
+        showFormMsg('ok', `帳號「${username}」已成功建立`);
+        document.getElementById('newUsername').value    = '';
+        document.getElementById('newDisplayName').value = '';
+        document.getElementById('newPassword').value    = '';
+        renderTable();
+      } else {
+        showFormMsg('err', res.reason);
+      }
+    }
+
+    function showFormMsg(type, msg) {
+      const el = document.getElementById('formMsg');
+      el.textContent = msg;
+      el.className   = 'form-msg ' + type;
+      setTimeout(() => { el.className = 'form-msg'; }, 4000);
+    }
+
+    function toggleEnabled(username, current) {
+      AUTH.updateUser(username, { enabled: !current });
+      renderTable();
+    }
+
+    function toggleTool(username, tool, current) {
+      const user  = AUTH.getUsers().find(u => u.username === username);
+      const tools = { ...(user.tools || {}), [tool]: !current };
+      AUTH.updateUser(username, { tools });
+      renderTable();
+    }
+
+    function deleteUser(username) {
+      if (!confirm(`確定刪除帳號「${username}」？此操作無法復原。`)) return;
+      const res = AUTH.deleteUser(username);
+      if (!res.ok) alert(res.reason);
+      renderTable();
+    }
+
+    function openPwModal(username) {
+      _pwTarget = username;
+      document.getElementById('pwModalUser').textContent = username;
+      document.getElementById('pwInput').value = '';
+      document.getElementById('pwModal').classList.add('open');
+      setTimeout(() => document.getElementById('pwInput').focus(), 100);
+    }
+
+    function closePwModal() {
+      document.getElementById('pwModal').classList.remove('open');
+      _pwTarget = null;
+    }
+
+    function confirmPwChange() {
+      const pw = document.getElementById('pwInput').value;
+      if (!pw) { alert('請輸入新密碼'); return; }
+      AUTH.updateUser(_pwTarget, { password: pw });
+      closePwModal();
+      alert(`帳號「${_pwTarget}」密碼已更新`);
+    }
+
+    function renderTable() {
+      const users   = AUTH.getUsers();
+      const tbody   = document.getElementById('userTableBody');
+      const counter = document.getElementById('userCount');
+      counter.textContent = `共 ${users.length} 筆`;
+
+      const TOOL_NAMES = { logistics:'物流分析', claims:'壓賠整合' };
+
+      tbody.innerHTML = users.map(u => {
+        const isAdmin   = u.role === 'admin';
+        const tools     = u.tools || { logistics: true, claims: true };
+        const toolsHtml = isAdmin
+          ? `<span class="tool-chip on">全部開放</span>`
+          : Object.entries(TOOL_NAMES).map(([key, name]) => `
+              <button class="tool-toggle ${tools[key] ? 'on' : 'off'}" onclick="toggleTool('${u.username}','${key}',${tools[key]})">
+                ${tools[key] ? '✓' : '✕'} ${name}
+              </button>`).join('');
+
+        const actionHtml = `
+          <div class="action-btns">
+            ${!isAdmin ? `
+              <button class="btn-sm ${u.enabled ? 'toggle-off' : 'toggle-on'}" onclick="toggleEnabled('${u.username}',${u.enabled})">
+                ${u.enabled ? '停用' : '啟用'}
+              </button>` : ''}
+            <button class="btn-sm" onclick="openPwModal('${u.username}')">改密碼</button>
+            ${!isAdmin ? `<button class="btn-sm del" onclick="deleteUser('${u.username}')">刪除</button>` : ''}
+          </div>`;
+
+        return `<tr>
+          <td style="font-family:var(--font-mono)">${u.username}</td>
+          <td>${u.displayName || '—'}</td>
+          <td><span class="role-badge ${u.role === 'admin' ? 'role-admin' : 'role-user'}">${u.role === 'admin' ? '管理員' : '使用人員'}</span></td>
+          <td><span class="status-badge ${u.enabled ? 'status-on' : 'status-off'}">${u.enabled ? '啟用' : '停用'}</span></td>
+          <td>${toolsHtml}</td>
+          <td>${actionHtml}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    renderTable();
+  </script>
+</body>
+</html>
