@@ -3,25 +3,21 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>物流數據分析 — OpsHub</title>
+  <title>物流數據分析 — 日翊客服小工具</title>
   <link rel="stylesheet" href="../../shared.css" />
   <link rel="stylesheet" href="tool.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
-  <script>
-    (function(){
-      const s = JSON.parse(sessionStorage.getItem('opshub_auth') || 'null');
-      if (!s || Date.now() - s.ts > 8*60*60*1000) { window.location.replace('../../login.html'); }
-    })();
-  </script>
+  <script src="../../auth.js"></script>
+  <script>AUTH.guard(null, '../../login.html');</script>
   <div class="page-bg"></div>
 
   <header class="site-header">
     <div class="header-inner">
       <a href="../../index.html" class="logo">
         <span class="logo-icon">⬡</span>
-        <span class="logo-text">OpsHub</span>
+        <span class="logo-text">日翊客服小工具</span>
       </a>
       <nav class="site-nav">
         <a href="../../index.html">首頁</a>
@@ -126,13 +122,13 @@
   <footer class="site-footer">
     <div class="footer-inner">
       <div class="footer-top">
-        <div class="footer-brand"><span class="logo-icon">⬡</span><span class="logo-text">OpsHub</span></div>
+        <div class="footer-brand"><span class="logo-icon">⬡</span><span class="logo-text">日翊客服小工具</span></div>
         <div class="footer-links">
           <a href="../../index.html">首頁</a>
           <a href="../claims-processor/index.html">壓賠整合</a>
         </div>
       </div>
-      <div class="footer-bottom"><p>© 2025 OpsHub · 物流營運數據分析助手</p></div>
+      <div class="footer-bottom"><p>© 2025 日翊客服小工具 · 物流數據分析</p></div>
     </div>
   </footer>
 
@@ -154,13 +150,21 @@
     btns.forEach(btn => btn.addEventListener('click', () => applySize(btn.dataset.size)));
   </script>
   <style>
-    .btn-logout { font-size: 12px; font-family: var(--font-mono); padding: 5px 12px; border-radius: var(--radius); border: 1px solid var(--line); background: transparent; color: var(--ink-3); cursor: pointer; transition: all 0.15s; margin-left: 0.5rem; }
-    .btn-logout:hover { background: var(--danger-bg); color: var(--danger); border-color: var(--danger); }
+    .btn-logout { font-size:12px; font-family:var(--font-mono); padding:5px 12px; border-radius:var(--radius); border:1px solid var(--line); background:transparent; color:var(--ink-3); cursor:pointer; transition:all 0.15s; margin-left:0.5rem; }
+    .btn-logout:hover { background:var(--danger-bg); color:var(--danger); border-color:var(--danger); }
   </style>
   <script>
-    function logout() {
-      if (confirm('確定要登出嗎？')) { sessionStorage.removeItem('opshub_auth'); window.location.replace('../../login.html'); }
-    }
+    function logout() { if (confirm('確定要登出嗎？')) { AUTH.logout(); window.location.replace('../../login.html'); } }
+    // 管理員顯示帳號管理連結
+    (function(){
+      const s = AUTH.getSession();
+      if (s && s.role === 'admin') {
+        const nav = document.querySelector('.site-nav');
+        const a = document.createElement('a');
+        a.href = '../../admin.html'; a.textContent = '帳號管理'; a.style.color = 'var(--warn)';
+        nav.insertBefore(a, nav.querySelector('.btn-logout'));
+      }
+    })();
   </script>
 </body>
 </html>
