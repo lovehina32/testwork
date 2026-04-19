@@ -9,6 +9,12 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
+  <script>
+    (function(){
+      const s = JSON.parse(sessionStorage.getItem('opshub_auth') || 'null');
+      if (!s || Date.now() - s.ts > 8*60*60*1000) { window.location.replace('../../login.html'); }
+    })();
+  </script>
   <div class="page-bg"></div>
 
   <header class="site-header">
@@ -146,6 +152,15 @@
     const saved = localStorage.getItem(STORAGE_KEY) || 'fs-md';
     applySize(saved);
     btns.forEach(btn => btn.addEventListener('click', () => applySize(btn.dataset.size)));
+  </script>
+  <style>
+    .btn-logout { font-size: 12px; font-family: var(--font-mono); padding: 5px 12px; border-radius: var(--radius); border: 1px solid var(--line); background: transparent; color: var(--ink-3); cursor: pointer; transition: all 0.15s; margin-left: 0.5rem; }
+    .btn-logout:hover { background: var(--danger-bg); color: var(--danger); border-color: var(--danger); }
+  </style>
+  <script>
+    function logout() {
+      if (confirm('確定要登出嗎？')) { sessionStorage.removeItem('opshub_auth'); window.location.replace('../../login.html'); }
+    }
   </script>
 </body>
 </html>
