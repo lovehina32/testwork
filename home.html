@@ -14,15 +14,15 @@
 
   <header class="site-header">
     <div class="header-inner">
-      <a href="index.html" class="logo">
+      <a href="home.html" class="logo">
         <span class="logo-icon">⬡</span>
         <span class="logo-text">日翊客服小工具</span>
       </a>
       <nav class="site-nav">
-        <a href="index.html" class="nav-active">首頁</a>
-        <a href="tools/logistics-analyzer/index.html">物流分析</a>
-        <a href="tools/claims-processor/index.html">壓賠整合</a>
-        <button class="btn-logout" onclick="logout()" title="登出">登出</button>
+        <a href="home.html" class="nav-active" id="nav-home">首頁</a>
+        <a href="home.html?tab=frontline" id="nav-frontline">一線客服人員</a>
+        <a href="home.html?tab=vendor"    id="nav-vendor">廠商客服人員</a>
+        <button class="btn-logout" onclick="logout()">登出</button>
       </nav>
     </div>
   </header>
@@ -32,12 +32,11 @@
     <!-- Hero -->
     <section class="hero-section">
       <div class="hero-inner">
-        <div class="hero-eyebrow">日翊客服小工具</div>
-        <h1 class="hero-title">工具集<br><em>為你服務</em></h1>
-        <p class="hero-desc">日翊客服小工具整合物流報表分析與壓賠資料整合，將繁瑣的人工作業轉為一鍵自動化流程。所有運算在本機瀏覽器執行，資料不離開你的電腦。</p>
+        <div class="hero-eyebrow" id="heroEyebrow">日翊客服小工具</div>
+        <h1 class="hero-title" id="heroTitle">工具集<br><em>為你服務</em></h1>
+        <p class="hero-desc" id="heroDesc">整合物流報表分析與壓賠資料整合，將繁瑣的人工作業轉為一鍵自動化流程。</p>
         <div class="hero-cta">
-          <a href="#tools" class="btn-primary">選擇工具 ↓</a>
-          <span class="cta-note">免安裝 · 免後端 · 純瀏覽器執行</span>
+          <a href="#tools" class="btn-primary" id="heroBtn">選擇工具 ↓</a>
         </div>
       </div>
       <div class="hero-visual">
@@ -53,17 +52,17 @@
     <!-- Tools -->
     <section class="tools-section" id="tools">
       <div class="tools-inner">
-        <div class="section-label">工具選擇</div>
-        <div class="tools-grid">
+        <div class="section-label" id="toolsSectionLabel">工具選擇</div>
+        <div class="tools-grid" id="toolsGrid">
 
-          <!-- Tool 1 -->
-          <a href="tools/logistics-analyzer/index.html" class="tool-card" id="card-logistics">
+          <!-- Tool 1：物流分析（一線客服） -->
+          <a href="tools/logistics-analyzer/index.html" class="tool-card" id="card-logistics" data-group="frontline">
             <div class="tc-header">
               <div class="tc-icon">📊</div>
               <div class="tc-badge">純前端分析</div>
             </div>
             <h2 class="tc-title">物流營運<br>數據分析助手</h2>
-            <p class="tc-desc">上傳 CSV 或 Excel 報表，自動萃取核心問題、異常預警與改善建議，免登入免 API Key。</p>
+            <p class="tc-desc">上傳 CSV 或 Excel 報表，自動萃取核心問題、異常預警與改善建議。</p>
             <div class="tc-features">
               <div class="tc-feat"><span class="feat-dot"></span>數據總結與規模概覽</div>
               <div class="tc-feat"><span class="feat-dot"></span>核心問題 Top 3 識別</div>
@@ -73,13 +72,13 @@
             <div class="tc-footer">
               <span class="tc-tag">CSV</span>
               <span class="tc-tag">Excel</span>
-              <span class="tc-tag">免 API Key</span>
+              <span class="tc-tag tc-tag-group">一線客服</span>
               <span class="tc-enter">進入工具 →</span>
             </div>
           </a>
 
-          <!-- Tool 2 -->
-          <a href="tools/claims-processor/index.html" class="tool-card" id="card-claims">
+          <!-- Tool 2：壓賠整合（廠商客服） -->
+          <a href="tools/claims-processor/index.html" class="tool-card" id="card-claims" data-group="vendor">
             <div class="tc-header">
               <div class="tc-icon">📋</div>
               <div class="tc-badge tc-badge-green">SOP 自動化</div>
@@ -95,54 +94,48 @@
             <div class="tc-footer">
               <span class="tc-tag">CSV</span>
               <span class="tc-tag">Excel</span>
-              <span class="tc-tag">免 API Key</span>
+              <span class="tc-tag tc-tag-group-vendor">廠商客服</span>
               <span class="tc-enter">進入工具 →</span>
             </div>
           </a>
 
         </div>
+
+        <!-- Empty state -->
+        <div id="emptyState" style="display:none; padding:3rem; text-align:center; color:var(--ink-3); font-size:0.93em;">
+          您目前沒有此分類的工具使用權限，請聯絡管理員開通。
+        </div>
       </div>
     </section>
 
     <!-- How it works -->
-    <section class="how-section">
+    <section class="how-section" id="howSection">
       <div class="how-inner">
         <div class="section-label">使用流程</div>
         <div class="how-grid">
           <div class="how-step">
             <div class="how-num">01</div>
             <div class="how-title">選擇工具</div>
-            <div class="how-desc">依任務選擇物流分析或壓賠整合工具</div>
+            <div class="how-desc">依任務選擇對應工具</div>
           </div>
           <div class="how-arrow">→</div>
           <div class="how-step">
             <div class="how-num">02</div>
             <div class="how-title">上傳報表</div>
-            <div class="how-desc">拖放或點擊上傳 CSV / Excel 來源檔案</div>
+            <div class="how-desc">拖放或點擊上傳 CSV / Excel</div>
           </div>
           <div class="how-arrow">→</div>
           <div class="how-step">
             <div class="how-num">03</div>
             <div class="how-title">自動處理</div>
-            <div class="how-desc">系統執行 SOP 邏輯或 AI 分析</div>
+            <div class="how-desc">系統執行 SOP 邏輯或分析</div>
           </div>
           <div class="how-arrow">→</div>
           <div class="how-step">
             <div class="how-num">04</div>
             <div class="how-title">匯出結果</div>
-            <div class="how-desc">下載 Excel 報表或查看分析洞察</div>
+            <div class="how-desc">下載 Excel 報表或查看洞察</div>
           </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Privacy note -->
-    <section class="privacy-section">
-      <div class="privacy-inner">
-        <div class="prv-icon">🔒</div>
-        <div>
-          <div class="prv-title">資料安全說明</div>
-          <div class="prv-desc">所有檔案處理皆在您的本機瀏覽器中執行。壓賠整合工具完全離線運算，不傳送任何資料至外部伺服器。物流分析工具需要 Anthropic API Key，僅將報表前段資料傳送至 Claude AI 進行分析。</div>
         </div>
       </div>
     </section>
@@ -162,13 +155,103 @@
         </div>
       </div>
       <div class="footer-bottom">
-        <p>© 2025 日翊客服小工具 · 所有資料處理於本機瀏覽器執行</p>
+        <p>© 2025 日翊客服小工具</p>
       </div>
     </div>
   </footer>
 
+  <style>
+    /* Tab active style */
+    .site-nav a.tab-active {
+      color: var(--ink);
+      font-weight: 500;
+      border-bottom-color: var(--ink);
+    }
+    .btn-logout {
+      font-size: 12px; font-family: var(--font-mono);
+      padding: 5px 12px; border-radius: var(--radius);
+      border: 1px solid var(--line); background: transparent;
+      color: var(--ink-3); cursor: pointer; transition: all 0.15s; margin-left: 0.5rem;
+    }
+    .btn-logout:hover { background: var(--danger-bg); color: var(--danger); border-color: var(--danger); }
+    .tc-tag-group        { background: #e8effe; color: #1a56db; }
+    .tc-tag-group-vendor { background: var(--success-bg); color: var(--success); }
+  </style>
+
   <script>
-    // Subtle card hover effect
+    function logout() {
+      if (confirm('確定要登出嗎？')) { AUTH.logout(); window.location.replace('login.html'); }
+    }
+
+    // ── Tab + Permission logic ───────────────────────────────
+    (function () {
+      const s = AUTH.getSession();
+
+      // 管理員顯示帳號管理
+      if (s && s.role === 'admin') {
+        const nav = document.querySelector('.site-nav');
+        const a = document.createElement('a');
+        a.href = 'admin.html'; a.textContent = '帳號管理'; a.style.color = 'var(--warn)';
+        nav.insertBefore(a, document.getElementById('nav-frontline'));
+      }
+
+      // 歡迎訊息
+      if (s) {
+        const eyebrow = document.getElementById('heroEyebrow');
+        if (eyebrow) eyebrow.textContent = '歡迎，' + (s.displayName || s.username);
+      }
+
+      // 取得工具權限
+      const tools = s ? AUTH.getUserTools(s.username) : { logistics: true, claims: true };
+
+      // 根據 URL ?tab= 決定顯示哪些卡片
+      const params  = new URLSearchParams(window.location.search);
+      const tab     = params.get('tab') || 'all';
+
+      const cardLogistics = document.getElementById('card-logistics');
+      const cardClaims    = document.getElementById('card-claims');
+      const emptyState    = document.getElementById('emptyState');
+      const howSection    = document.getElementById('howSection');
+      const sectionLabel  = document.getElementById('toolsSectionLabel');
+      const heroTitle     = document.getElementById('heroTitle');
+      const heroDesc      = document.getElementById('heroDesc');
+      const heroBtn       = document.getElementById('heroBtn');
+
+      // Nav highlight
+      document.getElementById('nav-home').classList.remove('nav-active');
+      if (tab === 'frontline') {
+        document.getElementById('nav-frontline').classList.add('tab-active');
+        heroTitle.innerHTML = '一線客服<br><em>工具</em>';
+        heroDesc.textContent = '物流數據分析，協助一線客服人員快速掌握異常狀況與處理建議。';
+        sectionLabel.textContent = '一線客服人員工具';
+        heroBtn.textContent = '立即使用 →';
+      } else if (tab === 'vendor') {
+        document.getElementById('nav-vendor').classList.add('tab-active');
+        heroTitle.innerHTML = '廠商客服<br><em>工具</em>';
+        heroDesc.textContent = '壓賠資料整合，自動執行六步驟 SOP，輸出標準壓賠 Excel 報表。';
+        sectionLabel.textContent = '廠商客服人員工具';
+        heroBtn.textContent = '立即使用 →';
+      } else {
+        document.getElementById('nav-home').classList.add('nav-active');
+      }
+
+      // 顯示/隱藏卡片
+      function showCard(card, toolKey, group) {
+        const inTab = (tab === 'all' || tab === group);
+        const hasPerm = (s && s.role === 'admin') || tools[toolKey];
+        card.style.display = (inTab && hasPerm) ? '' : 'none';
+      }
+
+      showCard(cardLogistics, 'logistics', 'frontline');
+      showCard(cardClaims,    'claims',    'vendor');
+
+      // 空狀態
+      const visible = [cardLogistics, cardClaims].filter(c => c.style.display !== 'none');
+      emptyState.style.display    = visible.length === 0 ? 'block' : 'none';
+      howSection.style.display    = tab === 'all' ? '' : 'none';
+    })();
+
+    // Card hover tilt
     document.querySelectorAll('.tool-card').forEach(card => {
       card.addEventListener('mousemove', e => {
         const r = card.getBoundingClientRect();
@@ -176,43 +259,8 @@
         const y = ((e.clientY - r.top)  / r.height - 0.5) * 8;
         card.style.transform = `perspective(600px) rotateY(${x}deg) rotateX(${-y}deg) translateY(-4px)`;
       });
-      card.addEventListener('mouseleave', () => {
-        card.style.transform = '';
-      });
+      card.addEventListener('mouseleave', () => { card.style.transform = ''; });
     });
-  </script>
-  <style>
-    .btn-logout { font-size:12px; font-family:var(--font-mono); padding:5px 12px; border-radius:var(--radius); border:1px solid var(--line); background:transparent; color:var(--ink-3); cursor:pointer; transition:all 0.15s; margin-left:0.5rem; }
-    .btn-logout:hover { background:var(--danger-bg); color:var(--danger); border-color:var(--danger); }
-  </style>
-  <script>
-    function logout() {
-      if (confirm('確定要登出嗎？')) { AUTH.logout(); window.location.replace('login.html'); }
-    }
-    // 顯示管理員入口
-    (function(){
-      const s = AUTH.getSession();
-      if (s && s.role === 'admin') {
-        const nav = document.querySelector('.site-nav');
-        const adminLink = document.createElement('a');
-        adminLink.href = 'admin.html';
-        adminLink.textContent = '帳號管理';
-        adminLink.style.color = 'var(--warn)';
-        nav.insertBefore(adminLink, nav.querySelector('.btn-logout'));
-      }
-      // 顯示歡迎訊息
-      if (s) {
-        const name = s.displayName || s.username;
-        const tag = document.querySelector('.hero-eyebrow');
-        if (tag) tag.textContent = '歡迎，' + name;
-      }
-      // 根據工具權限顯示工具卡片
-      if (s && s.role !== 'admin') {
-        const tools = AUTH.getUserTools(s.username);
-        if (!tools.logistics) { const el = document.getElementById('card-logistics'); if(el) el.style.display='none'; }
-        if (!tools.claims)    { const el = document.getElementById('card-claims');    if(el) el.style.display='none'; }
-      }
-    })();
   </script>
 </body>
 </html>
