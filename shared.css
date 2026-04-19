@@ -1,0 +1,188 @@
+/* ─── OpsHub · shared.css ───────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+:root {
+  --ink:        #0e0e0e;
+  --ink-2:      #3a3a3a;
+  --ink-3:      #6b6b6b;
+  --ink-4:      #9a9a9a;
+  --paper:      #f7f5f0;
+  --paper-2:    #eeece6;
+  --paper-3:    #e3e0d7;
+  --line:       rgba(14,14,14,0.12);
+  --accent:     #1a56db;
+  --accent-bg:  #e8effe;
+  --warn:       #b45309;
+  --warn-bg:    #fef3c7;
+  --danger:     #b91c1c;
+  --danger-bg:  #fee2e2;
+  --success:    #15803d;
+  --success-bg: #dcfce7;
+  --radius:     6px;
+  --radius-lg:  10px;
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-body:    'IBM Plex Sans', 'Noto Sans TC', sans-serif;
+  --font-mono:    'IBM Plex Mono', monospace;
+}
+
+html {
+  font-size: 15px;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--paper);
+  color: var(--ink);
+  min-height: 100vh;
+  line-height: 1.6;
+}
+
+/* ── Font Size Control Widget ── */
+.font-size-control {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper);
+  margin-left: 1rem;
+}
+.fsc-label {
+  font-size: 11px; font-family: var(--font-mono);
+  color: var(--ink-4); letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.fsc-btn {
+  width: 26px; height: 26px;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--line); border-radius: 4px;
+  background: transparent; cursor: pointer;
+  font-family: var(--font-mono); font-size: 12px;
+  color: var(--ink-3); transition: all 0.15s;
+  line-height: 1;
+}
+.fsc-btn:hover { background: var(--paper-2); color: var(--ink); border-color: var(--ink-3); }
+.fsc-btn.active { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.fsc-divider { width: 1px; height: 16px; background: var(--line); }
+
+/* ── Page Background ── */
+.page-bg {
+  position: fixed; inset: 0; z-index: -1;
+  background: var(--paper);
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 39px, var(--line) 39px, var(--line) 40px),
+    repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(14,14,14,0.04) 39px, rgba(14,14,14,0.04) 40px);
+}
+
+/* ── Header ── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(247,245,240,0.93);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--line);
+}
+.header-inner {
+  max-width: 1040px; margin: 0 auto;
+  padding: 0 2rem;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 54px;
+}
+.logo {
+  display: flex; align-items: center; gap: 8px;
+  text-decoration: none;
+}
+.logo-icon { font-size: 18px; }
+.logo-text {
+  font-family: var(--font-mono); font-size: 15px;
+  font-weight: 500; letter-spacing: 0.04em;
+  color: var(--ink);
+}
+.site-nav { display: flex; gap: 1.5rem; align-items: center; }
+.site-nav a {
+  font-size: 13px; color: var(--ink-3);
+  text-decoration: none; transition: color 0.15s;
+  padding: 4px 0;
+  border-bottom: 1.5px solid transparent;
+}
+.site-nav a:hover { color: var(--ink); }
+.site-nav a.nav-active {
+  color: var(--ink); font-weight: 500;
+  border-bottom-color: var(--ink);
+}
+
+/* ── Breadcrumb ── */
+.breadcrumb {
+  font-size: 12px; font-family: var(--font-mono);
+  color: var(--ink-4); display: flex; align-items: center; gap: 6px;
+  margin-bottom: 1.5rem;
+}
+.breadcrumb a { color: var(--ink-3); text-decoration: none; }
+.breadcrumb a:hover { color: var(--ink); }
+.breadcrumb span { color: var(--ink-4); }
+
+/* ── Section label ── */
+.section-label {
+  font-size: 11px; font-family: var(--font-mono);
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--ink-4); margin-bottom: 1.5rem;
+}
+
+/* ── Footer ── */
+.site-footer {
+  border-top: 1px solid var(--line);
+  padding: 2rem 2rem;
+  margin-top: 4rem;
+}
+.footer-inner { max-width: 1040px; margin: 0 auto; }
+.footer-top {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 1rem; flex-wrap: wrap; gap: 1rem;
+}
+.footer-brand {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--font-mono); font-size: 14px; color: var(--ink-2);
+}
+.footer-links { display: flex; gap: 1.5rem; }
+.footer-links a {
+  font-size: 13px; color: var(--ink-3); text-decoration: none;
+}
+.footer-links a:hover { color: var(--ink); }
+.footer-bottom p {
+  font-size: 12px; color: var(--ink-4); font-family: var(--font-mono);
+}
+
+/* ── Badges ── */
+.badge { display: inline-block; font-size: 10px; font-family: var(--font-mono); padding: 2px 8px; border-radius: 2px; font-weight: 500; }
+.badge-info    { background: var(--accent-bg); color: var(--accent); }
+.badge-warn    { background: var(--warn-bg);   color: var(--warn);   }
+.badge-danger  { background: var(--danger-bg); color: var(--danger); }
+.badge-success { background: var(--success-bg);color: var(--success);}
+
+/* ── Error ── */
+.error-msg {
+  display: none; font-size: 13px;
+  color: var(--danger); background: var(--danger-bg);
+  border-radius: var(--radius); padding: 10px 14px;
+  margin: 0.5rem 0;
+}
+
+/* ── Buttons ── */
+.btn-primary {
+  display: inline-block;
+  padding: 11px 24px; font-size: 14px; font-weight: 500;
+  background: var(--ink); color: var(--paper);
+  border: none; border-radius: var(--radius);
+  cursor: pointer; text-decoration: none;
+  transition: background 0.15s, transform 0.1s;
+  font-family: var(--font-body);
+}
+.btn-primary:hover { background: var(--ink-2); }
+.btn-primary:active { transform: scale(0.99); }
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .header-inner { padding: 0 1.25rem; }
+  .site-footer  { padding: 2rem 1.25rem; }
+}
