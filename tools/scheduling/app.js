@@ -1,11 +1,39 @@
-/* ─── 日翊客服小工具 · 客服排班工具 · app.js ─────────────── */
+/* ─── 日翊客服小工具 · 客服排班工具 · app.js（純前端版）── */
 'use strict';
 
 let uploadedCSV = null;
-let outputData  = null; // { headers, rows, warnings, stats }
+let outputData  = null;
+
+// ── 班位清單定義 ─────────────────────────────────────────
+const ALL_SHIFTS = [
+  '07:00-16:00','07:30-16:30',
+  '08:00-17:00','08:00-17:00','08:00-17:00',
+  '09:00-18:00','09:00-18:00',
+  '10:00-19:00','11:00-20:00',
+  '13:00-22:00','14:00-23:00'
+];
+
+// 各日別可用班位
+function getAvailableShifts(dayType) {
+  let shifts = [...ALL_SHIFTS];
+  if (dayType === 'mon') {
+    // 週一：移除 1個08:00、10:00
+    const i08 = shifts.indexOf('08:00-17:00'); if (i08 > -1) shifts.splice(i08, 1);
+    shifts = shifts.filter(s => s !== '10:00-19:00');
+  } else if (dayType === 'tue-fri') {
+    // 週二至五：移除 1個08:00、1個09:00、10:00
+    const i08 = shifts.indexOf('08:00-17:00'); if (i08 > -1) shifts.splice(i08, 1);
+    const i09 = shifts.indexOf('09:00-18:00'); if (i09 > -1) shifts.splice(i09, 1);
+    shifts = shifts.filter(s => s !== '10:00-19:00');
+  } else if (dayType === 'weekend') {
+    // 週末：僅保留 4 個班位
+    shifts = ['08:00-17:00','09:00-18:00','13:00-22:00','14:00-23:00'];
+  }
+  // 課會日：回傳全部 ALL_SHIFTS
+  return shifts;
+}
 
 // ── DOM refs ─────────────────────────────────────────────
-const apiKeyInput  = document.getElementById('apiKey');
 const runBtn       = document.getElementById('runBtn');
 const errorEl      = document.getElementById('errorMsg');
 const loadingEl    = document.getElementById('loadingDiv');
@@ -13,21 +41,15 @@ const progressFill = document.getElementById('progressFill');
 const loadingText  = document.getElementById('loadingText');
 const resultBlock  = document.getElementById('resultBlock');
 
-// Restore API key
-if (localStorage.getItem('rz_apikey')) apiKeyInput.value = localStorage.getItem('rz_apikey');
-apiKeyInput.addEventListener('change', () => localStorage.setItem('rz_apikey', apiKeyInput.value.trim()));
-
-// ── Enable run button when inputs ready ──────────────────
+// ── 輸入就緒檢查 ─────────────────────────────────────────
 function checkReady() {
-  const hasKey  = apiKeyInput.value.trim().length > 10;
-  const hasText = (document.getElementById('scheduleText')?.value?.trim().length > 10) || !!uploadedCSV;
-  runBtn.disabled = !(hasKey && hasText);
-  runBtn.textContent = (hasKey && hasText) ? '開始自動排班 ↗' : '請輸入 API Key 與勤務表後開始排班';
+  const hasText = (document.getElementById('scheduleText')?.value?.trim().length > 5) || !!uploadedCSV;
+  runBtn.disabled = !hasText;
+  runBtn.textContent = hasText ? '開始自動排班' : '請輸入或上傳預定勤務表後開始';
 }
-apiKeyInput.addEventListener('input', checkReady);
 document.getElementById('scheduleText').addEventListener('input', checkReady);
 
-// ── Input toggle ─────────────────────────────────────────
+// ── 輸入切換 ─────────────────────────────────────────────
 window.switchInput = function(mode) {
   document.getElementById('panelText').style.display = mode === 'text' ? '' : 'none';
   document.getElementById('panelFile').style.display = mode === 'file' ? '' : 'none';
@@ -36,7 +58,7 @@ window.switchInput = function(mode) {
   checkReady();
 };
 
-// ── File upload ───────────────────────────────────────────
+// ── 檔案上傳 ─────────────────────────────────────────────
 const dropzone  = document.getElementById('dropzone');
 const fileInput = document.getElementById('fileInput');
 dropzone.addEventListener('click', () => fileInput.click());
@@ -81,213 +103,286 @@ function formatSize(b) {
   return (b/1024/1024).toFixed(1) + ' MB';
 }
 
-// ── Run ──────────────────────────────────────────────────
+// ── CSV 解析 ─────────────────────────────────────────────
+function parseCsv(csv) {
+  const lines = csv.split('\n').map(l => l.trim()).filter(Boolean);
+  if (!lines.length) return { headers: [], rows: [] };
+  const headers = splitLine(lines[0]);
+  const rows = lines.slice(1).map(line => splitLine(line));
+  return { headers, rows };
+}
+
+function splitLine(line) {
+  const result = []; let cur = ''; let inQ = false;
+  for (const c of line) {
+    if (c === '"') { inQ = !inQ; }
+    else if (c === ',' && !inQ) { result.push(cur.trim()); cur = ''; }
+    else { cur += c; }
+  }
+  result.push(cur.trim());
+  return result;
+}
+
+// ── 判斷日別類型 ─────────────────────────────────────────
+function getDayType(header) {
+  // header 格式如：4/28(一)、5/1(三)、課會日 等
+  if (header.includes('課會')) return 'meeting';
+  if (header.includes('六') || header.includes('日')) return 'weekend';
+  if (header.includes('一')) return 'mon';
+  if (header.match(/[二三四五]/)) return 'tue-fri';
+  return 'tue-fri'; // 預設
+}
+
+// ── 假別判斷 ─────────────────────────────────────────────
+const OFF_LABELS = ['休','特','國','例休','例假','補休'];
+function isOff(v) { return OFF_LABELS.some(o => v && v.toString().includes(o)); }
+function isEmpty(v) { return !v || v.toString().trim() === ''; }
+
+// ── 主排班邏輯 ────────────────────────────────────────────
+function runScheduleLogic(parsed) {
+  const { headers, rows } = parsed;
+  // headers[0] = 姓名，headers[1..] = 日期欄
+  const dateHeaders = headers.slice(1);
+  const warnings = [];
+  const result = []; // [{name, shifts:[]}]
+
+  // 建立人員清單
+  rows.forEach(row => {
+    result.push({ name: row[0] || '', shifts: row.slice(1).map(v => v || '') });
+  });
+
+  // 對每個日期欄位做排班
+  dateHeaders.forEach((dateHeader, colIdx) => {
+    const dayType = getDayType(dateHeader);
+    let available = getAvailableShifts(dayType); // 可用班位池（有序）
+
+    // 張語軒特殊處理：週末/國定假日強制休
+    const isWeekend = dayType === 'weekend';
+
+    // 先計算已有班別（非空、非假別）的人，從班位池中移除對應班位
+    result.forEach(person => {
+      const cell = person.shifts[colIdx];
+      if (!isEmpty(cell) && !isOff(cell)) {
+        // 找到並移除班位池中對應的班位
+        const idx = available.findIndex(s => s.startsWith(cell.substring(0,5)));
+        if (idx > -1) available.splice(idx, 1);
+      }
+    });
+
+    // 張語軒規則：週末強制排休
+    result.forEach(person => {
+      if (person.name.includes('張語軒')) {
+        if (isWeekend || dayType === 'weekend') {
+          if (isEmpty(person.shifts[colIdx])) {
+            person.shifts[colIdx] = '休';
+          }
+        }
+        // 若上班固定08:00
+        if (!isOff(person.shifts[colIdx]) && !isEmpty(person.shifts[colIdx])) {
+          // 保持原班別
+        } else if (!isOff(person.shifts[colIdx]) && isEmpty(person.shifts[colIdx]) && !isWeekend) {
+          person.shifts[colIdx] = '08:00-17:00';
+          // 從班位池移除一個08:00
+          const i = available.findIndex(s => s.startsWith('08:00'));
+          if (i > -1) available.splice(i, 1);
+        }
+      }
+    });
+
+    // 週末若張語軒上班，移除一個保留位
+    if (isWeekend) {
+      const yx = result.find(p => p.name.includes('張語軒'));
+      if (yx && !isOff(yx.shifts[colIdx])) {
+        // 已處理，保持4人
+      }
+    }
+
+    // 填寫其他空缺（從名單上方依序分配）
+    let shiftPool = [...available];
+    result.forEach(person => {
+      if (person.name.includes('張語軒')) return; // 張語軒已處理
+      const cell = person.shifts[colIdx];
+      if (isEmpty(cell)) {
+        if (shiftPool.length > 0) {
+          person.shifts[colIdx] = shiftPool.shift();
+        } else {
+          person.shifts[colIdx] = '休'; // 無班可排則排休
+        }
+      }
+    });
+  });
+
+  // ── 法規檢查 ─────────────────────────────────────────
+  if (document.getElementById('optCheck').checked) {
+    result.forEach(person => {
+      const shifts = person.shifts;
+      // 檢查連上 7 天
+      let consecutive = 0;
+      for (let i = 0; i < shifts.length; i++) {
+        if (!isOff(shifts[i]) && !isEmpty(shifts[i])) {
+          consecutive++;
+          if (consecutive >= 7) {
+            warnings.push(`【${person.name}】在第 ${i-5} ~ ${i+1} 天出現連續 7 天以上上班，請手動調整`);
+            consecutive = 0;
+          }
+        } else {
+          consecutive = 0;
+        }
+      }
+      // 檢查上一休一
+      let zigzag = 0;
+      for (let i = 1; i < shifts.length - 1; i++) {
+        const prev = shifts[i-1], curr = shifts[i], next = shifts[i+1];
+        const prevWork = !isOff(prev) && !isEmpty(prev);
+        const currOff  = isOff(curr);
+        const nextWork = !isOff(next) && !isEmpty(next);
+        if (prevWork && currOff && nextWork) zigzag++;
+      }
+      if (zigzag >= 2) {
+        warnings.push(`【${person.name}】出現 ${zigzag} 次「上一休一」碎班情形，建議調整連休區段`);
+      }
+    });
+  }
+
+  // ── 統計 ─────────────────────────────────────────────
+  let totalAssigned = 0, totalOff = 0;
+  result.forEach(p => {
+    p.shifts.forEach(s => {
+      if (!isEmpty(s) && !isOff(s)) totalAssigned++;
+      if (isOff(s)) totalOff++;
+    });
+  });
+
+  return {
+    headers,
+    rows: result,
+    warnings,
+    stats: {
+      totalDays:           dateHeaders.length,
+      staffCount:          result.length,
+      totalShiftsAssigned: totalAssigned,
+      offDays:             totalOff
+    }
+  };
+}
+
+// ── 執行排班 ─────────────────────────────────────────────
 runBtn.addEventListener('click', runScheduling);
 
-async function runScheduling() {
-  const apiKey = apiKeyInput.value.trim();
-  if (!apiKey) { showError('請輸入 Anthropic API Key'); return; }
-
+function runScheduling() {
   const rawInput = uploadedCSV || document.getElementById('scheduleText').value.trim();
   if (!rawInput) { showError('請提供預定勤務表內容'); return; }
-
-  const optCheck   = document.getElementById('optCheck').checked;
-  const optSummary = document.getElementById('optSummary').checked;
 
   hideError();
   runBtn.disabled = true;
   runBtn.textContent = '排班中...';
   loadingEl.style.display = 'block';
   resultBlock.style.display = 'none';
-  setProgress('正在讀取勤務表結構...', 5);
+  setProgress('解析勤務表結構...', 20);
 
-  // ── Build system prompt ───────────────────────────────
-  const systemPrompt = `你是「日翊物流」的專業人事排班專員。請嚴格依照以下排班規則處理使用者提供的預定勤務表，填寫所有空缺班位，並以 JSON 格式輸出結果。
+  setTimeout(() => {
+    try {
+      setProgress('套用排班規則...', 50);
+      const parsed = parseCsv(rawInput);
+      if (!parsed.headers.length || !parsed.rows.length) {
+        throw new Error('無法解析資料，請確認格式為 CSV（逗號分隔）或貼入正確的表格內容');
+      }
 
-## 班位清單（共 11 個名額）
-07:00-16:00, 07:30-16:30, 08:00-17:00(x3), 09:00-18:00(x2), 10:00-19:00, 11:00-20:00, 13:00-22:00, 14:00-23:00
+      setProgress('法規檢查...', 80);
+      const result = runScheduleLogic(parsed);
+      outputData = result;
 
-## 每日人力需求
-- 週一（9人）：移除 08:00×1、10:00
-- 週二至週五（8人）：移除 08:00×1、09:00×1、10:00
-- 週末六日（4人）：僅保留 4 個班位
-- 課會日（11人）：使用完整班位清單
-- 週末若張語軒上班：優先安排 08:00，並手動移除一個保留位維持總數 4 人
+      setProgress('產出排班表...', 95);
+      document.getElementById('rawOutput').textContent =
+        result.rows.map(r => [r.name, ...r.shifts].join(',')).join('\n');
+      renderResult(result);
 
-## 人員特殊規則
-- 張語軒：班別固定 08:00~17:00，逢六日及國定假日一律排休
-- 全體：確保「一週一例一休」，絕對不可連上 7 天，禁止「上一休一」碎班
+      setProgress('完成！', 100);
+      setTimeout(() => {
+        loadingEl.style.display = 'none';
+        resultBlock.style.display = 'block';
+        resultBlock.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        runBtn.disabled = false;
+        runBtn.textContent = '重新排班';
+      }, 300);
 
-## 處理順序
-1. 保留原有「休、特、國」及預排班別不動
-2. 由名單最上方向下，將當日可用班位依序分配給未休假人員
-3. 完成後全局檢查法規
-
-## 輸出格式（JSON，不要其他文字）
-{
-  "headers": ["姓名", "日期1", "日期2", ...],
-  "rows": [
-    {"name": "張語軒", "shifts": ["08:00", "休", "08:00", ...]},
-    ...
-  ],
-  "warnings": ["警告訊息1", "警告訊息2"],
-  "stats": {
-    "totalDays": 數字,
-    "staffCount": 數字,
-    "totalShiftsAssigned": 數字,
-    "offDays": 數字
-  }
-}
-
-假別（休/特/國）必須原樣保留，空缺填入具體班別時間（如 08:00 或 08:00-17:00）。`;
-
-  const userPrompt = `以下是預定勤務表，請填寫所有空缺班位：
-
-${rawInput}
-
-請嚴格依排班規則填寫，只輸出 JSON，不要任何說明文字。`;
-
-  try {
-    setProgress('連線至 AI 排班引擎...', 15);
-    await delay(200);
-
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 4096,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: userPrompt }]
-      })
-    });
-
-    setProgress('AI 正在分析排班規則...', 40);
-
-    if (!resp.ok) {
-      const err = await resp.json().catch(() => ({}));
-      throw new Error(err?.error?.message || `HTTP ${resp.status}`);
+    } catch (err) {
+      loadingEl.style.display = 'none';
+      runBtn.disabled = false;
+      runBtn.textContent = '重新排班';
+      showError('排班失敗：' + err.message);
     }
-
-    const data = await resp.json();
-    setProgress('解析排班結果...', 75);
-    await delay(300);
-
-    const raw  = (data.content || []).map(b => b.text || '').join('');
-    const clean = raw.replace(/```json|```/g, '').trim();
-    const parsed = JSON.parse(clean);
-
-    setProgress('產出排班表...', 90);
-    await delay(200);
-
-    outputData = parsed;
-    document.getElementById('rawOutput').textContent = JSON.stringify(parsed, null, 2);
-    renderResult(parsed, optCheck, optSummary);
-    setProgress('完成！', 100);
-    await delay(300);
-
-    loadingEl.style.display = 'none';
-    resultBlock.style.display = 'block';
-    resultBlock.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    runBtn.disabled = false;
-    runBtn.textContent = '重新排班';
-
-  } catch (err) {
-    loadingEl.style.display = 'none';
-    runBtn.disabled = false;
-    runBtn.textContent = '重新排班';
-    showError('排班失敗：' + err.message);
-  }
+  }, 100);
 }
 
-// ── Render result ─────────────────────────────────────────
-function renderResult(d, showWarnings, showStats) {
-  // Stats
-  if (showStats && d.stats) {
+// ── 渲染結果 ─────────────────────────────────────────────
+function renderResult(d) {
+  // 統計
+  if (document.getElementById('optSummary').checked && d.stats) {
     const s = d.stats;
     document.getElementById('resultStats').innerHTML = `
-      <div class="stat-pill">排班天數 <strong>${s.totalDays || '—'}</strong></div>
-      <div class="stat-pill">人員數 <strong>${s.staffCount || (d.rows?.length || '—')}</strong></div>
-      <div class="stat-pill">已填班位 <strong>${s.totalShiftsAssigned || '—'}</strong></div>
-      <div class="stat-pill">休假人次 <strong>${s.offDays || '—'}</strong></div>
+      <div class="stat-pill">排班天數 <strong>${s.totalDays}</strong></div>
+      <div class="stat-pill">人員數 <strong>${s.staffCount}</strong></div>
+      <div class="stat-pill">已填班位 <strong>${s.totalShiftsAssigned}</strong></div>
+      <div class="stat-pill">休假人次 <strong>${s.offDays}</strong></div>
     `;
   }
 
-  // Warnings
+  // 警告
   const warnBlock = document.getElementById('warningBlock');
-  if (showWarnings && d.warnings?.length) {
-    warnBlock.innerHTML = d.warnings.map(w =>
-      `<div class="warn-box"><strong>⚠ 注意：</strong>${w}</div>`
-    ).join('');
-  } else {
-    warnBlock.innerHTML = showWarnings
-      ? `<div class="warn-box" style="border-color:var(--success);background:var(--success-bg)"><strong style="color:var(--success)">✓ 法規檢查通過</strong>：無連班或碎班異常</div>`
-      : '';
+  if (document.getElementById('optCheck').checked) {
+    if (d.warnings?.length) {
+      warnBlock.innerHTML = d.warnings.map(w =>
+        `<div class="warn-box"><strong>⚠ 注意：</strong>${w}</div>`
+      ).join('');
+    } else {
+      warnBlock.innerHTML = `<div class="warn-box" style="border-color:var(--success);background:var(--success-bg)"><strong style="color:var(--success)">✓ 法規檢查通過</strong>：無連班或碎班異常</div>`;
+    }
   }
 
-  // Table
+  // 表格
   if (!d.headers || !d.rows) return;
-  const OFF_LABELS = ['休','特','國','例休','例假','補休'];
-  const isOff = v => OFF_LABELS.some(o => v && v.includes(o));
-
   let html = '<table><thead><tr>';
   d.headers.forEach(h => { html += `<th>${h}</th>`; });
   html += '</tr></thead><tbody>';
-
   d.rows.forEach(row => {
-    html += `<tr><td>${row.name || ''}</td>`;
+    html += `<tr><td>${row.name}</td>`;
     (row.shifts || []).forEach(cell => {
       const v = cell || '';
-      if (isOff(v)) {
-        html += `<td class="cell-off">${v}</td>`;
-      } else if (!v || v === '') {
-        html += `<td class="cell-empty">—</td>`;
-      } else {
-        html += `<td class="cell-shift">${v}</td>`;
-      }
+      if (isOff(v)) html += `<td class="cell-off">${v}</td>`;
+      else if (!v)  html += `<td class="cell-empty">—</td>`;
+      else          html += `<td class="cell-shift">${v}</td>`;
     });
     html += '</tr>';
   });
-
   html += '</tbody></table>';
   document.getElementById('scheduleTableWrap').innerHTML = html;
 }
 
-// ── Export Excel ──────────────────────────────────────────
+// ── 匯出 Excel ────────────────────────────────────────────
 document.getElementById('exportBtn').addEventListener('click', exportExcel);
 
 function exportExcel() {
   if (!outputData?.headers || !outputData?.rows) return;
   const { headers, rows } = outputData;
-  const OFF_LABELS = ['休','特','國','例休','例假','補休'];
-  const isOff = v => OFF_LABELS.some(o => v && v.includes(o));
+  const wb = XLSX.utils.book_new();
+  const aoa = [headers, ...rows.map(r => [r.name, ...(r.shifts || [])])];
+  const ws  = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = headers.map((_, i) => ({ wch: i === 0 ? 12 : 13 }));
 
-  const wb   = XLSX.utils.book_new();
-  const data = [headers, ...rows.map(r => [r.name, ...(r.shifts || [])])];
-  const ws   = XLSX.utils.aoa_to_sheet(data);
-
-  // Column widths
-  ws['!cols'] = headers.map((h, i) => ({ wch: i === 0 ? 12 : 11 }));
-
-  // Style header row
   const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+
+  // Header row 樣式
   for (let C = range.s.c; C <= range.e.c; C++) {
     const addr = XLSX.utils.encode_cell({ r: 0, c: C });
-    if (ws[addr]) {
-      ws[addr].s = {
-        font:      { bold: true, color: { rgb: 'FFFFFF' } },
-        fill:      { fgColor: { rgb: '2D3748' } },
-        alignment: { horizontal: 'center', vertical: 'center' }
-      };
-    }
+    if (ws[addr]) ws[addr].s = {
+      font:      { bold: true, color: { rgb: 'FFFFFF' } },
+      fill:      { fgColor: { rgb: '2D3748' } },
+      alignment: { horizontal: 'center', vertical: 'center' }
+    };
   }
 
-  // Style data cells
+  // 資料儲存格樣式
   for (let R = 1; R <= range.e.r; R++) {
     for (let C = range.s.c; C <= range.e.c; C++) {
       const addr = XLSX.utils.encode_cell({ r: R, c: C });
@@ -295,49 +390,37 @@ function exportExcel() {
       const val = String(ws[addr].v || '');
       ws[addr].s = {
         alignment: { horizontal: C === 0 ? 'left' : 'center', vertical: 'center' },
-        font: isOff(val)
-          ? { bold: true, color: { rgb: 'C53030' } }
-          : { color: { rgb: '1A202C' } },
-        fill: isOff(val)
-          ? { fgColor: { rgb: 'FFF5F5' } }
-          : { fgColor: { rgb: R % 2 === 0 ? 'F7FAFC' : 'FFFFFF' } }
+        font: isOff(val) ? { bold: true, color: { rgb: 'C53030' } } : { color: { rgb: '1A202C' } },
+        fill: { fgColor: { rgb: isOff(val) ? 'FFF5F5' : (R % 2 === 0 ? 'F7FAFC' : 'FFFFFF') } }
       };
     }
-  }
-
-  // Name column style
-  for (let R = 1; R <= range.e.r; R++) {
-    const addr = XLSX.utils.encode_cell({ r: R, c: 0 });
-    if (ws[addr]) ws[addr].s = { ...ws[addr].s, font: { bold: true, color: { rgb: '2D3748' } } };
+    // 姓名欄粗體
+    const nameAddr = XLSX.utils.encode_cell({ r: R, c: 0 });
+    if (ws[nameAddr]) ws[nameAddr].s = { ...ws[nameAddr].s, font: { bold: true, color: { rgb: '2D3748' } } };
   }
 
   XLSX.utils.book_append_sheet(wb, ws, '排班表');
 
-  // Stats sheet
+  // 統計工作表
   if (outputData.stats) {
     const s = outputData.stats;
-    const statsWs = XLSX.utils.aoa_to_sheet([
-      ['項目', '數值'],
-      ['排班天數', s.totalDays || ''],
-      ['人員數', s.staffCount || rows.length],
-      ['已填班位數', s.totalShiftsAssigned || ''],
-      ['休假人次', s.offDays || ''],
+    const sw = XLSX.utils.aoa_to_sheet([
+      ['項目','數值'],
+      ['排班天數', s.totalDays],
+      ['人員數', s.staffCount],
+      ['已填班位數', s.totalShiftsAssigned],
+      ['休假人次', s.offDays],
     ]);
-    statsWs['!cols'] = [{ wch: 16 }, { wch: 12 }];
-    XLSX.utils.book_append_sheet(wb, statsWs, '統計摘要');
+    sw['!cols'] = [{ wch: 16 }, { wch: 12 }];
+    XLSX.utils.book_append_sheet(wb, sw, '統計摘要');
   }
 
   const now = new Date();
-  const ts  = `${now.getFullYear()}${pad2(now.getMonth()+1)}${pad2(now.getDate())}`;
-  XLSX.writeFile(wb, `排班表_${ts}.xlsx`);
+  XLSX.writeFile(wb, `排班表_${now.getFullYear()}${pad2(now.getMonth()+1)}${pad2(now.getDate())}.xlsx`);
 }
 
 // ── Helpers ───────────────────────────────────────────────
 function pad2(n)    { return String(n).padStart(2,'0'); }
-function delay(ms)  { return new Promise(r => setTimeout(r, ms)); }
 function showError(msg) { errorEl.textContent = msg; errorEl.style.display = 'block'; }
 function hideError()    { errorEl.style.display = 'none'; }
-function setProgress(msg, pct) {
-  loadingText.textContent = msg;
-  progressFill.style.width = pct + '%';
-}
+function setProgress(msg, pct) { loadingText.textContent = msg; progressFill.style.width = pct + '%'; }
