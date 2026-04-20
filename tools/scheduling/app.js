@@ -1,531 +1,431 @@
-/* ─── 日翊客服小工具 · 客服排班工具 · app.js ─────────────── */
-'use strict';
+/* ═══════════════════════════════════════════════════════
+   日翊客服小工具 · 客服排班工具 · app.js
+   
+   排班邏輯（v6）：
+   ─ Phase0：張語軒預先處理（固定班，不計入人數）
+   ─ Phase1：每人每週補足 2 天休假（智慧分散，保護班位需求）
+   ─ Phase2：班位池依序分配空白格（有人休假後面的人自動遞補）
+   ─ Phase3：法規檢查（連班 / 碎班 / 週休不足）
 
-/* ══════════════════════════════════════════════════════
-   排班規則常數
+   班位清單：
+   一般完整（11個）：07~16, 07:30~16:30, 08~17×3, 09~18×2, 10~19, 11~20, 13~22, 14~23
+   課會日（11個）：   07~16, 07:30~16:30, 08~17×3, 09~18×2, 10~19×2, 11~20, 14~23
+   週末（4個）：      07~16, 09~18, 11~20, 14~23
+   週一（9個）：      移除 1個08~17 + 10~19
+   週二至五（8個）：  移除 1個08~17 + 1個09~18 + 10~19
 ══════════════════════════════════════════════════════ */
 
-// 各人員固定班別（依輪班週期表）
-const PERSON_SHIFT = {
-  '陳芝容': '07~16',
-  '李雅筠': '07:30~16:30',
-  '胡巧宜': '08~17',
-  '游鈞捷': '09~18',
-  '張語軒': '08~17',   // 張語軒固定 08~17
-  '廖聲友': '10~19',
-  '廖武志': '11~20',
-  '羅思凱': '12~21',
-  '曾雪惠': '13~22',
-  '劉康正': '14~23',
-  '郭信智': '14~23',
-};
-
-// 人員順序（依班表排序）
-const PERSON_ORDER = ['陳芝容','李雅筠','胡巧宜','游鈞捷','張語軒',
-                      '廖聲友','廖武志','羅思凱','曾雪惠','劉康正','郭信智'];
-
-// 每日需上班人數上限
-const MAX_WORKERS = { mon:9, 'tue-fri':8, weekend:4, meeting:11, special:9 };
-
-// 假別清單
-const OFF_LABELS = ['休','特','國','例休','例假','補休','生日假','喪假'];
-function isOff(v)   { return OFF_LABELS.some(o => v && String(v).includes(o)); }
-function isEmpty(v) { return !v || String(v).trim() === '' || String(v).trim() === 'None'; }
 
 /* ══════════════════════════════════════════════════════
-   DOM refs & 狀態
+   班位清單
 ══════════════════════════════════════════════════════ */
-let uploadedData = null;   // { dates, weekdays, specials, persons }
-let outputData   = null;
+const ALL_SHIFTS     = ['07~16','07:30~16:30','08~17','08~17','08~17','09~18','09~18','10~19','11~20','13~22','14~23'];
+const MEETING_SHIFTS = ['07~16','07:30~16:30','08~17','08~17','08~17','09~18','09~18','10~19','10~19','11~20','14~23'];
+const WEEKEND_SHIFTS = ['07~16','09~18','11~20','14~23'];
 
-const runBtn       = document.getElementById('runBtn');
-const errorEl      = document.getElementById('errorMsg');
-const loadingEl    = document.getElementById('loadingDiv');
-const progressFill = document.getElementById('progressFill');
-const loadingText  = document.getElementById('loadingText');
-const resultBlock  = document.getElementById('resultBlock');
+// 每日非張語軒最大休假人數（10人 - 需上班人數）
+const MAX_OFF = { mon:1, weekday:2, weekend:6, meeting:0 };
 
-/* ══════════════════════════════════════════════════════
-   輸入切換
-══════════════════════════════════════════════════════ */
-window.switchInput = function(mode) {
-  document.getElementById('panelText').style.display = mode === 'text' ? '' : 'none';
-  document.getElementById('panelFile').style.display = mode === 'file' ? '' : 'none';
-  document.getElementById('togText').classList.toggle('active', mode === 'text');
-  document.getElementById('togFile').classList.toggle('active', mode === 'file');
-  checkReady();
-};
-
-function checkReady() {
-  const hasFile = !!uploadedData;
-  const hasText = document.getElementById('scheduleText')?.value?.trim().length > 5;
-  const ready   = hasFile || hasText;
-  runBtn.disabled   = !ready;
-  runBtn.textContent = ready ? '開始自動排班' : '請上傳或貼入預定勤務表後開始';
+function getPool(dtype, zhangWorks) {
+  let p;
+  if (dtype==='meeting')     p=[...MEETING_SHIFTS];
+  else if (dtype==='mon')  { p=[...ALL_SHIFTS]; rmOne(p,'08~17'); rmOne(p,'10~19'); }
+  else if (dtype==='weekday'){p=[...ALL_SHIFTS]; rmOne(p,'08~17'); rmOne(p,'09~18'); rmOne(p,'10~19');}
+  else                       p=[...WEEKEND_SHIFTS];
+  if (zhangWorks && p.includes('08~17')) rmOne(p,'08~17');
+  return p;
 }
-document.getElementById('scheduleText').addEventListener('input', checkReady);
-
-/* ══════════════════════════════════════════════════════
-   檔案上傳（接受 xlsx / xls / csv）
-══════════════════════════════════════════════════════ */
-const dropzone  = document.getElementById('dropzone');
-const fileInput = document.getElementById('fileInput');
-dropzone.addEventListener('click', () => fileInput.click());
-dropzone.addEventListener('dragover',  e => { e.preventDefault(); dropzone.classList.add('dragover'); });
-dropzone.addEventListener('dragleave', ()=> dropzone.classList.remove('dragover'));
-dropzone.addEventListener('drop', e => {
-  e.preventDefault(); dropzone.classList.remove('dragover');
-  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
-});
-fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
-
-function handleFile(file) {
-  const ext = file.name.split('.').pop().toLowerCase();
-  if (!['csv','xlsx','xls'].includes(ext)) { showError('請上傳 CSV 或 Excel 格式檔案'); return; }
-  document.getElementById('fileName').textContent = file.name;
-  document.getElementById('fileSize').textContent = formatSize(file.size);
-  document.getElementById('fileInfo').style.display = 'flex';
-  hideError();
-
-  const reader = new FileReader();
-  reader.onload = e => {
-    try {
-      let csv;
-      if (ext === 'csv') {
-        csv = e.target.result;
-      } else {
-        const wb = XLSX.read(e.target.result, { type: 'binary', cellDates: true });
-        csv = XLSX.utils.sheet_to_csv(wb.Sheets[wb.SheetNames[0]]);
-      }
-      uploadedData = parseScheduleCSV(csv);
-      if (!uploadedData) { showError('無法解析班表，請確認格式'); return; }
-      checkReady();
-    } catch(err) { showError('檔案讀取失敗：' + err.message); }
-  };
-  if (ext === 'csv') reader.readAsText(file, 'UTF-8');
-  else reader.readAsBinaryString(file);
-}
-
-window.removeFile = function() {
-  uploadedData = null;
-  document.getElementById('fileInfo').style.display = 'none';
-  fileInput.value = '';
-  checkReady();
-};
-
-/* ══════════════════════════════════════════════════════
-   CSV / Excel 解析
-   格式：
-   Row1-3：空白
-   Row4：標題列（綜合服務部...）
-   Row5：姓名|日期|日期1|日期2|...
-   Row6：空  |星期|一  |二  |...
-   Row7：     |    |    |課會|...  （特記）
-   Row8-18：人員資料
-   Row19+：統計列（跳過）
-══════════════════════════════════════════════════════ */
-function parseScheduleCSV(csv) {
-  const lines = csv.split('\n').map(l => l.split(','));
-
-  // 找到含「姓名」的 header 列
-  let headerRow = -1;
-  for (let i = 0; i < lines.length; i++) {
-    if (lines[i][0] && lines[i][0].includes('姓名')) { headerRow = i; break; }
-  }
-  if (headerRow === -1) return null;
-
-  const weekdayRow = lines[headerRow + 1] || [];
-  const specialRow = lines[headerRow + 2] || [];
-
-  // 日期欄：從 col 2 開始（0-indexed）
-  const dates    = [];
-  const weekdays = [];
-  const specials = [];
-
-  for (let c = 2; c < lines[headerRow].length; c++) {
-    const d = lines[headerRow][c]?.trim();
-    const w = weekdayRow[c]?.trim();
-    const s = specialRow[c]?.trim();
-    if (!d || d === '') break;
-    // 停止條件：遇到統計欄（生日/喪假 等）
-    if (d.includes('生日') || d.includes('輪休') || d.includes('特休') || d.includes('國定') || d.includes('合計')) break;
-    dates.push(d);
-    weekdays.push(w || '');
-    specials.push(s || '');
-  }
-
-  if (!dates.length) return null;
-
-  // 人員資料列
-  const persons = [];
-  for (let r = headerRow + 3; r < lines.length; r++) {
-    const row = lines[r];
-    const nameRaw = row[0]?.trim() || '';
-    if (!nameRaw) continue;
-    // 停止條件：遇到統計列
-    if (nameRaw.includes('出勤') || nameRaw.includes('總人數') || nameRaw.includes('國定') || nameRaw.includes('注意')) break;
-
-    // 解析姓名（可能含換行符或班別）
-    const namePart = nameRaw.replace(/\n.*/,'').replace(/\r.*/,'').trim();
-    if (!namePart) continue;
-
-    const shifts = [];
-    for (let c = 2; c < 2 + dates.length; c++) {
-      shifts.push(row[c]?.trim() || '');
-    }
-    persons.push({ name: namePart, shifts });
-  }
-
-  return { dates, weekdays, specials, persons };
-}
-
-/* ══════════════════════════════════════════════════════
-   判斷日別類型
-══════════════════════════════════════════════════════ */
-function getDayType(weekday, special) {
-  if (special && special.includes('課會')) return 'meeting';
-  if (weekday === '六' || weekday === '日')  return 'weekend';
-  if (weekday === '一')                       return 'mon';
-  return 'tue-fri';
-}
-
-/* ══════════════════════════════════════════════════════
-   取得該日可安排的最大上班人數
-══════════════════════════════════════════════════════ */
-function getMaxWorkers(dayType) {
-  return MAX_WORKERS[dayType] ?? 8;
-}
-
-/* ══════════════════════════════════════════════════════
-   主排班邏輯
-══════════════════════════════════════════════════════ */
-function runScheduleLogic(data) {
-  const { dates, weekdays, specials, persons } = data;
-  const warnings = [];
-
-  // 深複製 shifts（避免修改原始資料）
-  const result = persons.map(p => ({ name: p.name, shifts: [...p.shifts] }));
-
-  // 依日期逐欄排班
-  for (let ci = 0; ci < dates.length; ci++) {
-    const dayType   = getDayType(weekdays[ci], specials[ci]);
-    const maxWork   = getMaxWorkers(dayType);
-    const isMeeting = dayType === 'meeting';
-    const isWeekend = dayType === 'weekend';
-
-    // Step 1：計算已確定上班人數（非空、非假別）
-    let workCount = 0;
-    result.forEach(p => {
-      const v = p.shifts[ci];
-      if (!isEmpty(v) && !isOff(v)) workCount++;
-    });
-
-    // Step 2：對每位人員處理空白格
-    result.forEach(p => {
-      const v = p.shifts[ci];
-      if (!isEmpty(v)) return; // 已有值，跳過
-
-      const isZhang = p.name.includes('張語軒');
-
-      // 張語軒：週末強制休
-      if (isZhang && isWeekend) {
-        p.shifts[ci] = '休';
-        return;
-      }
-
-      // 課會日：所有人上班
-      if (isMeeting) {
-        p.shifts[ci] = isZhang ? '08~17' : (getPersonShift(p.name) || '08~17');
-        workCount++;
-        return;
-      }
-
-      // 判斷本日還能再安排上班的人數
-      if (workCount < maxWork) {
-        // 還有名額，安排上班
-        const shift = isZhang ? '08~17' : (getPersonShift(p.name) || '08~17');
-        p.shifts[ci] = shift;
-        workCount++;
-      } else {
-        // 名額已滿，排休
-        p.shifts[ci] = '休';
-      }
-    });
-  }
-
-  // ── 法規檢查 ─────────────────────────────────────────
-  if (document.getElementById('optCheck').checked) {
-    result.forEach(p => {
-      const s = p.shifts;
-
-      // 連上 7 天檢查
-      let cons = 0;
-      for (let i = 0; i < s.length; i++) {
-        if (!isOff(s[i]) && !isEmpty(s[i])) {
-          cons++;
-          if (cons >= 7) {
-            warnings.push(`【${p.name}】第 ${i-5}~${i+1} 欄出現連續 7 天以上上班，請手動調整`);
-            cons = 0;
-          }
-        } else { cons = 0; }
-      }
-
-      // 上一休一碎班檢查
-      let zigzag = 0;
-      for (let i = 1; i < s.length - 1; i++) {
-        const pw = !isOff(s[i-1]) && !isEmpty(s[i-1]);
-        const co = isOff(s[i]);
-        const nw = !isOff(s[i+1]) && !isEmpty(s[i+1]);
-        if (pw && co && nw) zigzag++;
-      }
-      if (zigzag >= 2) {
-        warnings.push(`【${p.name}】出現 ${zigzag} 次「上一休一」碎班，建議調整連休區段`);
-      }
-    });
-  }
-
-  // ── 統計 ─────────────────────────────────────────────
-  let totalWork = 0, totalOff = 0;
-  result.forEach(p => p.shifts.forEach(v => {
-    if (!isEmpty(v) && !isOff(v)) totalWork++;
-    else if (isOff(v)) totalOff++;
-  }));
-
-  return {
-    dates, weekdays, specials,
-    rows: result,
-    warnings,
-    stats: {
-      totalDays:  dates.length,
-      staffCount: result.length,
-      totalShiftsAssigned: totalWork,
-      offDays: totalOff
-    }
-  };
-}
-
-/* 取得人員預設班別（先從 PERSON_SHIFT，找不到則從名稱解析） */
-function getPersonShift(name) {
-  for (const [key, val] of Object.entries(PERSON_SHIFT)) {
-    if (name.includes(key) || key.includes(name)) return val;
-  }
-  return '08~17'; // 預設
-}
-
-/* ══════════════════════════════════════════════════════
-   執行排班
-══════════════════════════════════════════════════════ */
-runBtn.addEventListener('click', runScheduling);
-
-function runScheduling() {
-  hideError();
-  runBtn.disabled = true;
-  runBtn.textContent = '排班中...';
-  loadingEl.style.display = 'block';
-  resultBlock.style.display = 'none';
-  setProgress('解析勤務表...', 20);
-
-  setTimeout(() => {
-    try {
-      let data = uploadedData;
-
-      // 若無上傳檔案，嘗試解析文字輸入
-      if (!data) {
-        const text = document.getElementById('scheduleText').value.trim();
-        if (!text) throw new Error('請提供預定勤務表');
-        data = parseScheduleCSV(text);
-        if (!data || !data.persons.length) throw new Error('無法解析文字格式，建議改用 Excel 上傳');
-      }
-
-      setProgress('套用排班規則...', 55);
-      const result = runScheduleLogic(data);
-      outputData = result;
-
-      setProgress('產出排班表...', 85);
-      renderResult(result);
-
-      setProgress('完成！', 100);
-      setTimeout(() => {
-        loadingEl.style.display = 'none';
-        resultBlock.style.display = 'block';
-        resultBlock.scrollIntoView({ behavior:'smooth', block:'start' });
-        runBtn.disabled = false;
-        runBtn.textContent = '重新排班';
-      }, 300);
-
-    } catch(err) {
-      loadingEl.style.display = 'none';
-      runBtn.disabled = false;
-      runBtn.textContent = '重新排班';
-      showError('排班失敗：' + err.message);
-    }
-  }, 80);
-}
-
-/* ══════════════════════════════════════════════════════
-   渲染結果
-══════════════════════════════════════════════════════ */
-function renderResult(d) {
-  // 統計卡
-  if (document.getElementById('optSummary').checked && d.stats) {
-    const s = d.stats;
-    document.getElementById('resultStats').innerHTML = `
-      <div class="stat-pill">排班天數 <strong>${s.totalDays}</strong></div>
-      <div class="stat-pill">人員數 <strong>${s.staffCount}</strong></div>
-      <div class="stat-pill">已填班位 <strong>${s.totalShiftsAssigned}</strong></div>
-      <div class="stat-pill">休假人次 <strong>${s.offDays}</strong></div>`;
-  }
-
-  // 法規警告
-  const wb = document.getElementById('warningBlock');
-  if (document.getElementById('optCheck').checked) {
-    if (d.warnings?.length) {
-      wb.innerHTML = d.warnings.map(w =>
-        `<div class="warn-box"><strong>⚠ 注意：</strong>${w}</div>`).join('');
-    } else {
-      wb.innerHTML = `<div class="warn-box" style="border-color:var(--success);background:var(--success-bg)">
-        <strong style="color:var(--success)">✓ 法規檢查通過</strong>：無連班或碎班異常</div>`;
-    }
-  } else { wb.innerHTML = ''; }
-
-  // 表格
-  const dateLabels = d.dates.map((dt, i) => {
-    const w = d.weekdays[i] || '';
-    const s = d.specials[i] || '';
-    let label = dt.replace(/\d{4}-?/,'');  // 簡化日期
-    if (s) label += `<br><span style="font-size:0.8em;color:var(--accent)">${s}</span>`;
-    return `<th title="${s}">${label}<br><span style="color:var(--ink-4);font-weight:400">${w}</span></th>`;
-  }).join('');
-
-  const bodyRows = d.rows.map(row => {
-    const cells = row.shifts.map(cell => {
-      const v = cell || '';
-      if (isOff(v)) return `<td class="cell-off">${v}</td>`;
-      if (!v)       return `<td class="cell-empty">—</td>`;
-      return `<td class="cell-shift">${v}</td>`;
-    }).join('');
-    return `<tr><td><strong>${row.name}</strong></td>${cells}</tr>`;
-  }).join('');
-
-  document.getElementById('scheduleTableWrap').innerHTML = `
-    <table>
-      <thead><tr><th>姓名</th>${dateLabels}</tr></thead>
-      <tbody>${bodyRows}</tbody>
-    </table>`;
-
-  // Raw 輸出（CSV 格式）
-  const csvOut = [
-    ['姓名', ...d.dates],
-    ...d.rows.map(r => [r.name, ...r.shifts])
-  ].map(r => r.join(',')).join('\n');
-  document.getElementById('rawOutput').textContent = csvOut;
-}
-
-/* ══════════════════════════════════════════════════════
-   匯出 Excel（保持原始班表格式）
-══════════════════════════════════════════════════════ */
-document.getElementById('exportBtn').addEventListener('click', exportExcel);
-
-function exportExcel() {
-  if (!outputData?.rows) return;
-  const { dates, weekdays, specials, rows } = outputData;
-  const wb = XLSX.utils.book_new();
-
-  // 建立資料陣列
-  const headerRow  = ['姓名', ...dates];
-  const weekRow    = ['星期', ...weekdays];
-  const specialRow = ['備注',  ...specials];
-  const dataRows   = rows.map(r => [r.name, ...r.shifts]);
-  const aoa = [headerRow, weekRow, specialRow, ...dataRows];
-
-  const ws = XLSX.utils.aoa_to_sheet(aoa);
-
-  // 欄寬設定
-  ws['!cols'] = [{ wch: 10 }, ...dates.map(() => ({ wch: 12 }))];
-
-  const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
-
-  // Header 列樣式（深色背景）
-  for (let C = range.s.c; C <= range.e.c; C++) {
-    const addr = XLSX.utils.encode_cell({ r: 0, c: C });
-    if (ws[addr]) ws[addr].s = {
-      font:      { bold: true, color: { rgb: 'FFFFFF' } },
-      fill:      { fgColor: { rgb: '2D3748' } },
-      alignment: { horizontal: 'center', vertical: 'center' }
-    };
-  }
-
-  // 星期列樣式
-  for (let C = range.s.c; C <= range.e.c; C++) {
-    const addr = XLSX.utils.encode_cell({ r: 1, c: C });
-    if (ws[addr]) ws[addr].s = {
-      font: { color: { rgb: '4A5568' } },
-      fill: { fgColor: { rgb: 'EDF2F7' } },
-      alignment: { horizontal: 'center' }
-    };
-  }
-
-  // 備注列（週末/課會日特別標色）
-  for (let C = 1; C < specials.length + 1; C++) {
-    const addr = XLSX.utils.encode_cell({ r: 2, c: C });
-    if (!ws[addr]) continue;
-    const s = specials[C - 1] || '';
-    const w = weekdays[C - 1] || '';
-    let bg = 'FFFFFF';
-    if (s.includes('課會')) bg = 'BEE3F8';
-    else if (s.includes('檔期')) bg = 'FEF3C7';
-    else if (w === '六' || w === '日') bg = 'F0FDF4';
-    ws[addr].s = { font: { color: { rgb: '744210' } }, fill: { fgColor: { rgb: bg } }, alignment: { horizontal: 'center' } };
-  }
-
-  // 資料列樣式
-  for (let R = 3; R <= range.e.r; R++) {
-    for (let C = range.s.c; C <= range.e.c; C++) {
-      const addr = XLSX.utils.encode_cell({ r: R, c: C });
-      if (!ws[addr]) continue;
-      const val = String(ws[addr].v || '');
-      const off = isOff(val);
-      ws[addr].s = {
-        alignment: { horizontal: C === 0 ? 'left' : 'center', vertical: 'center' },
-        font: off ? { bold: true, color: { rgb: 'C53030' } }
-                  : { color: { rgb: C === 0 ? '2D3748' : '1A202C' } },
-        fill: { fgColor: { rgb: off ? 'FFF5F5' : (R % 2 === 0 ? 'F7FAFC' : 'FFFFFF') } }
-      };
-    }
-  }
-
-  XLSX.utils.book_append_sheet(wb, ws, '排班表');
-
-  // 統計工作表
-  if (outputData.stats) {
-    const s = outputData.stats;
-    const sw = XLSX.utils.aoa_to_sheet([
-      ['項目','數值'],
-      ['排班天數', s.totalDays],
-      ['人員數', s.staffCount],
-      ['已填班位數', s.totalShiftsAssigned],
-      ['休假人次', s.offDays],
-    ]);
-    sw['!cols'] = [{ wch: 16 }, { wch: 12 }];
-    XLSX.utils.book_append_sheet(wb, sw, '統計摘要');
-  }
-
-  const now = new Date();
-  XLSX.writeFile(wb, `排班表_${now.getFullYear()}${pad2(now.getMonth()+1)}${pad2(now.getDate())}.xlsx`);
-}
+function rmOne(arr, v) { const i=arr.indexOf(v); if(i>=0) arr.splice(i,1); }
 
 /* ══════════════════════════════════════════════════════
    工具函式
 ══════════════════════════════════════════════════════ */
-function pad2(n)    { return String(n).padStart(2,'0'); }
-function formatSize(b) {
-  if (b < 1024) return b + ' B';
-  if (b < 1048576) return Math.round(b/1024) + ' KB';
-  return (b/1048576).toFixed(1) + ' MB';
+const OFF_W   = ['休','特','國','例休','例假','補休','生日假','喪假'];
+const isOff   = v => OFF_W.some(o=>v&&String(v).includes(o));
+const isEmpty = v => { const s=String(v==null?'':v).trim(); return !s||s==='undefined'||s==='null'; };
+
+function getDtype(wd, sp) {
+  if (sp&&sp.includes('課會')) return 'meeting';
+  if (wd==='六'||wd==='日')    return 'weekend';
+  if (wd==='一')               return 'mon';
+  return 'weekday';
 }
-function showError(msg) { errorEl.textContent = msg; errorEl.style.display = 'block'; }
-function hideError()    { errorEl.style.display = 'none'; }
-function setProgress(msg, pct) {
-  loadingText.textContent = msg;
-  progressFill.style.width = pct + '%';
+
+function gcv(ws,r,c){
+  const cell=ws[XLSX.utils.encode_cell({r,c})];
+  if(!cell) return '';
+  if(cell.t==='d'||cell.v instanceof Date){
+    const d=cell.v instanceof Date?cell.v:new Date((cell.v-25569)*86400*1000);
+    return `${d.getMonth()+1}/${String(d.getDate()).padStart(2,'0')}`;
+  }
+  return String(cell.v==null?'':cell.v).split('\n')[0].trim();
 }
+function gcvRaw(ws,r,c){
+  const cell=ws[XLSX.utils.encode_cell({r,c})];
+  if(!cell||cell.v==null) return '';
+  return String(cell.v).trim();
+}
+
+/* ══════════════════════════════════════════════════════
+   解析工作表
+══════════════════════════════════════════════════════ */
+function parseWS(ws){
+  const rng=XLSX.utils.decode_range(ws['!ref']), dbg=[];
+  let hdrR=-1;
+  for(let r=0;r<=Math.min(rng.e.r,10);r++){
+    if(gcv(ws,r,0).includes('姓名')){hdrR=r;break;}
+  }
+  if(hdrR<0) throw new Error('找不到「姓名」欄位');
+  dbg.push(`姓名列 Row${hdrR+1}`);
+
+  let cS=-1,cE=-1;
+  for(let c=1;c<=rng.e.c;c++){
+    const cell=ws[XLSX.utils.encode_cell({r:hdrR,c})];
+    if(!cell) continue;
+    const isDate=cell.t==='d'||(cell.t==='n'&&typeof cell.v==='number'&&cell.v>40000&&cell.v<60000);
+    if(isDate){if(cS<0)cS=c;cE=c;}
+    else if(cS>=0) break;
+  }
+  if(cS<0) throw new Error('找不到日期欄位');
+  dbg.push(`日期 col${cS}~${cE}（${cE-cS+1}天）`);
+
+  const dates=[],weekdays=[],specials=[];
+  for(let c=cS;c<=cE;c++){
+    dates.push(gcv(ws,hdrR,c));
+    weekdays.push(gcv(ws,hdrR+1,c));
+    specials.push(gcv(ws,hdrR+2,c));
+  }
+
+  const persons=[];
+  for(let r=hdrR+3;r<=hdrR+13&&r<=rng.e.r;r++){
+    const raw=gcvRaw(ws,r,0);
+    if(!raw) continue;
+    const lines=raw.split('\n');
+    const name=lines[0].trim();
+    if(/出勤|總人數|國定休|注意/.test(name)) break;
+    if(/^\d{1,2}[~:]/.test(name)) continue;
+    const defaultShift=lines.length>1?lines[1].trim():'';
+    const shifts=[];
+    for(let c=cS;c<=cE;c++) shifts.push(gcv(ws,r,c));
+    persons.push({name,defaultShift,shifts});
+    dbg.push(`人員 Row${r+1}: ${name}[${defaultShift}]`);
+  }
+  if(!persons.length) throw new Error('找不到人員資料');
+  return {dates,weekdays,specials,persons,_dbg:dbg};
+}
+
+/* ══════════════════════════════════════════════════════
+   排班核心
+   規則：
+   1. 保留預排值
+   2. 張語軒固定班，不計入人數
+   3. Phase1：每人每週不足2天休假 → 智慧補休（分散，不超過當日容量）
+   4. Phase2：班位池依序分配空白格（遞補）
+   5. 法規：連上≤6天、禁上一休一
+══════════════════════════════════════════════════════ */
+function doSchedule(parsed){
+  const {dates,weekdays,specials,persons}=parsed;
+  const warnings=[], dbg=[];
+  const rows=persons.map(p=>({
+    name:p.name, defaultShift:p.defaultShift,
+    shifts:[...p.shifts],
+    isNew:Array(p.shifts.length).fill(false)
+  }));
+  const nDays=dates.length;
+
+  // 找週一位置（週期起點）
+  const weekStarts=[];
+  for(let ci=0;ci<nDays;ci++){
+    if(weekdays[ci]==='一') weekStarts.push(ci);
+  }
+
+  // 每日 dtype 快取
+  const dtypes=dates.map((d,i)=>getDtype(weekdays[i],specials[i]));
+
+  // 張語軒 index
+  const zhangIdx=rows.findIndex(r=>r.name.includes('張語軒'));
+
+  /* ── Phase0：張語軒預先處理 ── */
+  for(let ci=0;ci<nDays;ci++){
+    if(zhangIdx<0) break;
+    if(!isEmpty(rows[zhangIdx].shifts[ci])) continue;
+    rows[zhangIdx].shifts[ci] = dtypes[ci]==='weekend' ? '休' : '08~17';
+    rows[zhangIdx].isNew[ci]  = true;
+  }
+
+  /* ── Phase1：每人每週補足2天休假（智慧分散，保護班位需求）── */
+  // dailyOff：每日非張語軒已確定休假人數
+  const dailyOff=Array(nDays).fill(0);
+  for(let ci=0;ci<nDays;ci++){
+    rows.forEach((r,pi)=>{
+      if(pi===zhangIdx) return;
+      if(isOff(r.shifts[ci])) dailyOff[ci]++;
+    });
+  }
+
+  // needWork[ci]：當日（不含張語軒）最少需上班人數
+  const needWork={meeting:10,mon:9,weekday:8,weekend:4};
+
+  // canAddOff(ci)：若再加一人休假，剩餘空白格是否還能滿足需上班人數
+  function canAddOff(ci){
+    const dtype=dtypes[ci];
+    if(dtype==='meeting') return false; // 課會日不排休
+    const nw=needWork[dtype];
+    // 當日非張語軒：已上班數 + 空白數（扣掉即將補休的1格）
+    let alreadyWork=0, emptyCount=0;
+    rows.forEach((r,pi)=>{
+      if(pi===zhangIdx) return;
+      const v=r.shifts[ci];
+      if(!isEmpty(v)&&!isOff(v)) alreadyWork++;
+      else if(isEmpty(v)) emptyCount++;
+    });
+    // 加1人休後，剩餘可工作格 = alreadyWork + (emptyCount-1)
+    return (alreadyWork + emptyCount - 1) >= nw;
+  }
+
+  for(let wi=0;wi<weekStarts.length;wi++){
+    const wStart=weekStarts[wi];
+    const wEnd  =(wi+1<weekStarts.length ? weekStarts[wi+1]-1 : nDays-1);
+    const wCis  =Array.from({length:wEnd-wStart+1},(_,i)=>wStart+i);
+
+    rows.forEach((r,pi)=>{
+      if(pi===zhangIdx) return;
+      const existOff=wCis.filter(ci=>isOff(r.shifts[ci])).length;
+      let needed=Math.max(0,2-existOff);
+      if(needed===0) return;
+
+      // 候選格：空白、且加休後不會破壞當日班位需求
+      // 按 dailyOff 升序分散，優先平日後段
+      const cands=wCis
+        .filter(ci=>isEmpty(r.shifts[ci]) && canAddOff(ci))
+        .sort((a,b)=>dailyOff[a]-dailyOff[b]||a-b);
+
+      cands.forEach(ci=>{
+        if(needed<=0) return;
+        r.shifts[ci]='休'; r.isNew[ci]=true;
+        dailyOff[ci]++; needed--;
+      });
+
+      if(needed>0) dbg.push(`⚠ ${r.name} 第${wi+1}週休假不足（僅${2-needed}天），班位需求優先`);
+    });
+  }
+
+  /* ── Phase2：班位池依序分配空白格 ── */
+  for(let ci=0;ci<nDays;ci++){
+    const dtype=dtypes[ci];
+    const zhangWorks = zhangIdx>=0 && !isOff(rows[zhangIdx].shifts[ci]) && !isEmpty(rows[zhangIdx].shifts[ci]);
+    const pool=getPool(dtype, zhangWorks);
+
+    // 移除已有預排班別
+    rows.forEach((r,pi)=>{
+      if(pi===zhangIdx) return;
+      const v=r.shifts[ci];
+      if(!isEmpty(v)&&!isOff(v)){const idx=pool.indexOf(v);if(idx>=0)pool.splice(idx,1);}
+    });
+
+    // 空白格依名單順序從池取班位
+    rows.forEach((r,pi)=>{
+      if(pi===zhangIdx) return;
+      if(!isEmpty(r.shifts[ci])) return;
+      if(pool.length>0){r.shifts[ci]=pool.shift();r.isNew[ci]=true;}
+      else{r.shifts[ci]='休';r.isNew[ci]=true;}
+    });
+
+    const fw=rows.filter(r=>!isEmpty(r.shifts[ci])&&!isOff(r.shifts[ci])).length;
+    const fo=rows.filter(r=>isOff(r.shifts[ci])).length;
+    const exp={meeting:11,mon:9,weekday:8,weekend:4}[dtype];
+    dbg.push(`${dates[ci]}(${weekdays[ci]}${specials[ci]?'/'+specials[ci]:''}) 上班:${fw}/${exp} 假:${fo}`);
+  }
+
+  /* ── Phase3：法規檢查 ── */
+  if(document.getElementById('optC').checked){
+    rows.forEach(r=>{
+      // 連上超過6天
+      let cons=0;
+      for(let i=0;i<r.shifts.length;i++){
+        if(!isOff(r.shifts[i])&&!isEmpty(r.shifts[i])){
+          if(++cons>6) warnings.push(`【${r.name}】第${i-5}~${i+1}天連上${cons}天`);
+        } else cons=0;
+      }
+      // 上一休一
+      let zz=0;
+      for(let i=1;i<r.shifts.length-1;i++){
+        if(!isOff(r.shifts[i-1])&&!isEmpty(r.shifts[i-1])&&
+            isOff(r.shifts[i])&&
+           !isOff(r.shifts[i+1])&&!isEmpty(r.shifts[i+1])) zz++;
+      }
+      if(zz>=2) warnings.push(`【${r.name}】出現${zz}次「上一休一」碎班`);
+      // 週休不足2天
+      weekStarts.forEach((ws,wi)=>{
+        const we=wi+1<weekStarts.length?weekStarts[wi+1]-1:nDays-1;
+        const off=Array.from({length:we-ws+1},(_,i)=>ws+i).filter(ci=>isOff(r.shifts[ci])).length;
+        if(off<2) warnings.push(`【${r.name}】第${wi+1}週休假不足2天（僅${off}天）`);
+      });
+    });
+  }
+
+  let tw=0,to=0;
+  rows.forEach(r=>r.shifts.forEach(v=>{if(!isEmpty(v)&&!isOff(v))tw++;else if(isOff(v))to++;}));
+  return{dates,weekdays,specials,rows,warnings,_dbg:dbg,
+    stats:{totalDays:nDays,staffCount:rows.length,totalWork:tw,totalOff:to}};
+}
+
+/* ══════════════════════════════════════════════════════
+   上傳 & 執行
+══════════════════════════════════════════════════════ */
+let wsData=null,output=null;
+const zone=document.getElementById('zone'),fi=document.getElementById('fi');
+zone.addEventListener('click',()=>fi.click());
+zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('drag');});
+zone.addEventListener('dragleave',()=>zone.classList.remove('drag'));
+zone.addEventListener('drop',e=>{e.preventDefault();zone.classList.remove('drag');if(e.dataTransfer.files[0])loadFile(e.dataTransfer.files[0]);});
+fi.addEventListener('change',e=>{if(e.target.files[0])loadFile(e.target.files[0]);});
+
+function loadFile(f){
+  document.getElementById('fnm').textContent=f.name;
+  document.getElementById('fsz').textContent=fmtSz(f.size);
+  document.getElementById('fbar').style.display='flex';
+  hideErr();
+  const rd=new FileReader();
+  rd.onload=e=>{
+    try{
+      const wb=XLSX.read(e.target.result,{type:'binary',cellDates:true});
+      wsData=wb.Sheets[wb.SheetNames[0]];
+      document.getElementById('runBtn').disabled=false;
+      document.getElementById('runBtn').textContent='開始自動排班';
+    }catch(ex){showErr('讀取失敗：'+ex.message);}
+  };
+  rd.readAsBinaryString(f);
+}
+function clrFile(){
+  wsData=null;
+  document.getElementById('fbar').style.display='none';
+  fi.value='';
+  document.getElementById('runBtn').disabled=true;
+  document.getElementById('runBtn').textContent='請上傳班表後開始排班';
+  document.getElementById('result').style.display='none';
+  document.getElementById('dbg').style.display='none';
+}
+
+document.getElementById('runBtn').addEventListener('click',()=>{
+  if(!wsData) return;
+  hideErr();
+  document.getElementById('runBtn').disabled=true;
+  document.getElementById('runBtn').textContent='排班中...';
+  document.getElementById('loading').style.display='block';
+  document.getElementById('result').style.display='none';
+  document.getElementById('dbg').style.display='none';
+  setP('解析班表...',20);
+  setTimeout(()=>{
+    try{
+      setP('讀取儲存格...',35);
+      const parsed=parseWS(wsData);
+      if(document.getElementById('optD').checked){
+        const d=document.getElementById('dbg');d.style.display='block';d.textContent=parsed._dbg.join('\n');
+      }
+      setP('Phase1 週休分配...',55);
+      setP('Phase2 班位遞補...',70);
+      output=doSchedule(parsed);
+      if(document.getElementById('optD').checked){
+        document.getElementById('dbg').textContent+='\n---\n'+output._dbg.join('\n');
+      }
+      setP('產出結果...',88);
+      renderResult(output);
+      setP('完成！',100);
+      setTimeout(()=>{
+        document.getElementById('loading').style.display='none';
+        document.getElementById('result').style.display='block';
+        document.getElementById('result').scrollIntoView({behavior:'smooth',block:'start'});
+        document.getElementById('runBtn').disabled=false;
+        document.getElementById('runBtn').textContent='重新排班';
+      },300);
+    }catch(ex){
+      document.getElementById('loading').style.display='none';
+      document.getElementById('runBtn').disabled=false;
+      document.getElementById('runBtn').textContent='重新排班';
+      showErr('排班失敗：'+ex.message);
+    }
+  },80);
+});
+
+/* ══════════════════════════════════════════════════════
+   渲染 & 匯出
+══════════════════════════════════════════════════════ */
+function renderResult(d){
+  const s=d.stats;
+  document.getElementById('stats').innerHTML=
+    `<div class="pill">排班天數 <strong>${s.totalDays}</strong></div>
+     <div class="pill">人員數 <strong>${s.staffCount}</strong></div>
+     <div class="pill">已填班位 <strong>${s.totalWork}</strong></div>
+     <div class="pill">休假人次 <strong>${s.totalOff}</strong></div>`;
+
+  const wb2=document.getElementById('warns');
+  if(document.getElementById('optC').checked){
+    wb2.innerHTML=d.warnings.length
+      ?d.warnings.map(w=>`<div class="wb"><strong>⚠ </strong>${w}</div>`).join('')
+      :`<div class="ob"><strong>✓ 法規檢查通過</strong></div>`;
+  } else wb2.innerHTML='';
+
+  const SPBG={'課會':'#ebf8ff','檔期':'#fef3c7'};
+  const WKBG={'六':'#f0fdf4','日':'#f0fdf4'};
+
+  const ths=d.dates.map((dt,i)=>{
+    const w=d.weekdays[i],sp=d.specials[i];
+    const bg=SPBG[sp]?`style="background:${SPBG[sp]}"`:WKBG[w]?`style="background:${WKBG[w]}"`:'' ;
+    const badge=sp?`<br><span style="font-size:.62rem;color:#1a56db">${sp}</span>`:'';
+    return `<th ${bg}>${dt}<br><span style="color:#9a9a9a;font-weight:400">${w}</span>${badge}</th>`;
+  }).join('');
+
+  const trs=d.rows.map(r=>{
+    const cells=r.shifts.map((v,i)=>{
+      const w=d.weekdays[i],sp=d.specials[i];
+      const bg=SPBG[sp]?`style="background:${SPBG[sp]}"`:WKBG[w]?`style="background:#f9fafb"`:'';
+      const cls=isOff(v)?'off':isEmpty(v)?'empty':r.isNew[i]?'new':'';
+      return `<td class="${cls}" ${bg}>${v||'—'}</td>`;
+    }).join('');
+    return `<tr><td>${r.name}</td>${cells}</tr>`;
+  }).join('');
+
+  document.getElementById('tbl').innerHTML=
+    `<table><thead><tr><th>姓名</th>${ths}</tr></thead><tbody>${trs}</tbody></table>`;
+
+  const csv=[['姓名',...d.dates],...d.rows.map(r=>[r.name,...r.shifts])].map(r=>r.join(',')).join('\n');
+  document.getElementById('raw').textContent=csv;
+}
+
+document.getElementById('expBtn').addEventListener('click',()=>{
+  if(!output) return;
+  const {dates,weekdays,specials,rows}=output;
+  const wb3=XLSX.utils.book_new();
+  const aoa=[['姓名',...dates],['星期',...weekdays],['備注',...specials],...rows.map(r=>[r.name,...r.shifts])];
+  const ws3=XLSX.utils.aoa_to_sheet(aoa);
+  ws3['!cols']=[{wch:10},...dates.map(()=>({wch:13}))];
+  const rng=XLSX.utils.decode_range(ws3['!ref']||'A1');
+  for(let C=rng.s.c;C<=rng.e.c;C++){
+    const a=XLSX.utils.encode_cell({r:0,c:C});
+    if(ws3[a])ws3[a].s={font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'2D3748'}},alignment:{horizontal:'center'}};
+  }
+  for(let C=0;C<=rng.e.c;C++){
+    const a=XLSX.utils.encode_cell({r:1,c:C});
+    if(ws3[a])ws3[a].s={fill:{fgColor:{rgb:'EDF2F7'}},alignment:{horizontal:'center'},font:{color:{rgb:'4A5568'}}};
+  }
+  for(let R=3;R<=rng.e.r;R++) for(let C=0;C<=rng.e.c;C++){
+    const a=XLSX.utils.encode_cell({r:R,c:C});
+    if(!ws3[a]) continue;
+    const val=String(ws3[a].v||'');
+    ws3[a].s={
+      alignment:{horizontal:C===0?'left':'center',vertical:'center'},
+      font:isOff(val)?{bold:true,color:{rgb:'C53030'}}:{color:{rgb:C===0?'2D3748':'1A202C'}},
+      fill:{fgColor:{rgb:isOff(val)?'FFF5F5':R%2===0?'F7FAFC':'FFFFFF'}}
+    };
+  }
+  XLSX.utils.book_append_sheet(wb3,ws3,'排班表');
+  const now=new Date();
+  XLSX.writeFile(wb3,`排班表_${now.getFullYear()}${p2(now.getMonth()+1)}${p2(now.getDate())}.xlsx`);
+});
+
+function p2(n){return String(n).padStart(2,'0');}
+function fmtSz(b){if(b<1024)return b+' B';if(b<1048576)return Math.round(b/1024)+' KB';return (b/1048576).toFixed(1)+' MB';}
+function showErr(m){const e=document.getElementById('err');e.textContent=m;e.style.display='block';}
+function hideErr(){document.getElementById('err').style.display='none';}
+function setP(m,p){document.getElementById('lt').textContent=m;document.getElementById('prog').style.width=p+'%';}
