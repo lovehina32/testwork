@@ -18,8 +18,9 @@
         <span class="logo-icon">⬡</span>
         <span class="logo-text">日翊客服小工具</span>
       </a>
-      <nav class="site-nav">
+            <nav class="site-nav">
         <a href="home.html" class="nav-active" id="nav-home">首頁</a>
+        <a href="tools/scheduling/index.html" id="nav-scheduling">客服排班</a>
         <a href="home.html?tab=frontline" id="nav-frontline">一線客服人員</a>
         <a href="home.html?tab=vendor"    id="nav-vendor">廠商客服人員</a>
         <a href="admin.html" id="nav-admin" style="display:none;color:var(--warn)">帳號管理</a>
@@ -267,11 +268,11 @@
 
       showCard(cardLogistics,  'logistics',  'frontline');
       showCard(cardClaims,     'claims',     'vendor');
-      // 排班工具：全分頁皆顯示（有工具權限即可）
+      // 排班工具：僅在首頁（tab=all）顯示，一線/廠商分頁不顯示
       const cardSched = document.getElementById('card-scheduling');
       if (cardSched) {
         const hasSched = (s && s.role === 'admin') || tools.logistics || tools.claims;
-        cardSched.style.display = hasSched ? '' : 'none';
+        cardSched.style.display = (tab === 'all' && hasSched) ? '' : 'none';
       }
 
       // 空狀態
