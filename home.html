@@ -42,7 +42,7 @@
       </div>
       <div class="hero-visual">
         <div class="visual-grid">
-          <div class="vg-card vg-a"><div class="vg-num">2</div><div class="vg-label">整合工具</div></div>
+          <div class="vg-card vg-a"><div class="vg-num">3</div><div class="vg-label">整合工具</div></div>
           <div class="vg-card vg-b"><div class="vg-num">6</div><div class="vg-label">SOP 步驟自動化</div></div>
           <div class="vg-card vg-c"><div class="vg-num">18</div><div class="vg-label">壓賠輸出欄位</div></div>
           <div class="vg-card vg-d"><div class="vg-num">0</div><div class="vg-label">伺服器上傳</div></div>
@@ -96,6 +96,29 @@
               <span class="tc-tag">CSV</span>
               <span class="tc-tag">Excel</span>
               <span class="tc-tag tc-tag-group-vendor">廠商客服</span>
+              <span class="tc-enter">進入工具 →</span>
+            </div>
+          </a>
+
+
+          <!-- Tool 3：排班工具（一線客服 + 廠商客服） -->
+          <a href="tools/scheduling/index.html" class="tool-card" id="card-scheduling" data-group="all">
+            <div class="tc-header">
+              <div class="tc-icon">📅</div>
+              <div class="tc-badge tc-badge-amber">AI 排班助手</div>
+            </div>
+            <h2 class="tc-title">客服排班<br>自動填班工具</h2>
+            <p class="tc-desc">貼入預定勤務表，AI 依規則自動填寫空缺班位，一鍵匯出標準 Excel 排班表。</p>
+            <div class="tc-features">
+              <div class="tc-feat"><span class="feat-dot"></span>自動依班位清單分配班別</div>
+              <div class="tc-feat"><span class="feat-dot"></span>張語軒專屬規則自動套用</div>
+              <div class="tc-feat"><span class="feat-dot"></span>連班 / 碎班法規自動檢查</div>
+              <div class="tc-feat"><span class="feat-dot"></span>假別紅字標示 + 匯出 Excel</div>
+            </div>
+            <div class="tc-footer">
+              <span class="tc-tag">文字貼入</span>
+              <span class="tc-tag">Excel</span>
+              <span class="tc-tag">需 API Key</span>
               <span class="tc-enter">進入工具 →</span>
             </div>
           </a>
@@ -177,6 +200,7 @@
     .btn-logout:hover { background: var(--danger-bg); color: var(--danger); border-color: var(--danger); }
     .tc-tag-group        { background: #e8effe; color: #1a56db; }
     .tc-tag-group-vendor { background: var(--success-bg); color: var(--success); }
+    .tc-badge-amber { background: var(--warn-bg); color: var(--warn); }
   </style>
 
   <script>
@@ -241,11 +265,18 @@
         card.style.display = (inTab && hasPerm) ? '' : 'none';
       }
 
-      showCard(cardLogistics, 'logistics', 'frontline');
-      showCard(cardClaims,    'claims',    'vendor');
+      showCard(cardLogistics,  'logistics',  'frontline');
+      showCard(cardClaims,     'claims',     'vendor');
+      // 排班工具：全分頁皆顯示（有工具權限即可）
+      const cardSched = document.getElementById('card-scheduling');
+      if (cardSched) {
+        const hasSched = (s && s.role === 'admin') || tools.logistics || tools.claims;
+        cardSched.style.display = hasSched ? '' : 'none';
+      }
 
       // 空狀態
-      const visible = [cardLogistics, cardClaims].filter(c => c.style.display !== 'none');
+      const cardSched2 = document.getElementById('card-scheduling');
+      const visible = [cardLogistics, cardClaims, cardSched2].filter(c => c && c.style.display !== 'none');
       emptyState.style.display    = visible.length === 0 ? 'block' : 'none';
       howSection.style.display    = tab === 'all' ? '' : 'none';
     })();
