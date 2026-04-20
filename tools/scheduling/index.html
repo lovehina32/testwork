@@ -40,7 +40,7 @@
     <section class="tool-hero">
       <div class="tool-hero-tag">自動排班</div>
       <h1 class="tool-hero-title">客服排班<br><em>自動填班工具</em></h1>
-      <p class="tool-hero-sub">貼入預定勤務表，系統依規則自動填寫空缺班位，並匯出標準 Excel 排班表</p>
+      <p class="tool-hero-sub">上傳預定勤務班表 Excel，系統自動依排班規則填寫所有空缺，匯出完整排班結果</p>
     </section>
 
     <div class="app-card">
@@ -58,8 +58,8 @@
         <!-- Text input -->
         <div id="panelText">
           <textarea id="scheduleText" class="schedule-textarea"
-            placeholder="請貼入預定勤務表內容（支援純文字、CSV、Markdown 表格格式）&#10;&#10;範例格式：&#10;姓名,4/28(一),4/29(二),4/30(三),...&#10;張語軒,08:00,休,08:00,...&#10;王小明,,休,,..."></textarea>
-          <p class="api-note">留空的欄位代表待填空缺，系統將依排班規則自動補齊</p>
+            placeholder="支援直接貼入 Excel 複製的表格內容（CSV 格式）&#10;&#10;格式說明：&#10;第1列：姓名, 日期1, 日期2, ...&#10;第2列：星期, 一, 二, ...&#10;第3列：備注,（課會/檔期等）&#10;第4列起：陳芝容, 07~16, 休, 07~16, ...&#10;&#10;建議直接使用【上傳檔案】功能上傳 Excel 班表"></textarea>
+          <p class="api-note">建議直接上傳 Excel 檔案，系統會自動讀取班表格式。空白欄位將依排班規則自動補齊。</p>
         </div>
 
         <!-- File input -->
