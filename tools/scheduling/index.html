@@ -19,7 +19,7 @@
         <span class="logo-icon">⬡</span>
         <span class="logo-text">日翊客服小工具</span>
       </a>
-                  <nav class="site-nav">
+      <nav class="site-nav">
         <a href="../../home.html">首頁</a>
         <a href="index.html" class="nav-active" id="nav-scheduling">客服排班</a>
         <a href="../../home.html?tab=frontline">一線客服人員</a>
@@ -40,123 +40,89 @@
     <section class="tool-hero">
       <div class="tool-hero-tag">自動排班</div>
       <h1 class="tool-hero-title">客服排班<br><em>自動填班工具</em></h1>
-      <p class="tool-hero-sub">上傳預定勤務班表 Excel，系統自動依排班規則填寫所有空缺，匯出完整排班結果</p>
+      <p class="tool-hero-sub">上傳預定勤務班表，系統自動依規則填寫空缺、週休分配、班位遞補，匯出完整排班結果</p>
     </section>
 
     <div class="app-card">
 
-      <!-- 預定勤務表輸入 -->
+      <!-- 上傳區 -->
       <div class="config-block">
-        <div class="config-title">預定勤務表 <span class="badge badge-info">貼入文字或上傳 Excel/CSV</span></div>
-
-        <!-- Toggle -->
-        <div class="input-toggle">
-          <button class="tog-btn active" id="togText" onclick="switchInput('text')">貼入文字</button>
-          <button class="tog-btn" id="togFile" onclick="switchInput('file')">上傳檔案</button>
-        </div>
-
-        <!-- Text input -->
-        <div id="panelText">
-          <textarea id="scheduleText" class="schedule-textarea"
-            placeholder="支援直接貼入 Excel 複製的表格內容（CSV 格式）&#10;&#10;格式說明：&#10;第1列：姓名, 日期1, 日期2, ...&#10;第2列：星期, 一, 二, ...&#10;第3列：備注,（課會/檔期等）&#10;第4列起：陳芝容, 07~16, 休, 07~16, ...&#10;&#10;建議直接使用【上傳檔案】功能上傳 Excel 班表"></textarea>
-          <p class="api-note">建議直接上傳 Excel 檔案，系統會自動讀取班表格式。空白欄位將依排班規則自動補齊。</p>
-        </div>
-
-        <!-- File input -->
-        <div id="panelFile" style="display:none">
-          <div class="upload-zone" id="dropzone">
-            <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" />
-            <div class="upload-inner">
-              <div class="upload-glyph">↑</div>
-              <p class="upload-primary">拖放或點擊上傳預定勤務表</p>
-              <p class="upload-secondary">支援 CSV、XLSX、XLS</p>
-            </div>
+        <div class="config-title">上傳預定勤務班表 <span class="badge badge-info">.xlsx 格式</span></div>
+        <div class="upload-zone" id="zone">
+          <input type="file" id="fi" accept=".xlsx,.xls" />
+          <div class="upload-inner">
+            <div class="upload-glyph">↑</div>
+            <p class="upload-primary">拖放或點擊上傳預定勤務班表</p>
+            <p class="upload-secondary">日翊人員預定勤務班表 Excel 格式</p>
           </div>
-          <div class="file-info-bar" id="fileInfo" style="display:none">
-            <span class="fi-icon">📄</span>
-            <div class="fi-meta">
-              <div class="fi-name" id="fileName"></div>
-              <div class="fi-size" id="fileSize"></div>
-            </div>
-            <button class="fi-remove" onclick="removeFile()">✕</button>
+        </div>
+        <div class="file-info-bar" id="fbar" style="display:none">
+          <span class="fi-icon">📊</span>
+          <div class="fi-meta">
+            <div class="fi-name" id="fnm"></div>
+            <div class="fi-size" id="fsz"></div>
           </div>
+          <button class="fi-remove" onclick="clrFile()">✕</button>
         </div>
       </div>
 
-      <!-- Step 3: Options -->
+      <!-- 選項 -->
       <div class="config-block">
         <div class="config-title">排班選項</div>
         <div class="checkbox-grid">
-          <label class="cb-item"><input type="checkbox" id="optCheck" checked /><span>完成後自動檢查法規（連班/碎班）</span></label>
-          <label class="cb-item"><input type="checkbox" id="optExcel" checked /><span>同時匯出 Excel 檔案</span></label>
-          <label class="cb-item"><input type="checkbox" id="optSummary" checked /><span>產出排班摘要統計</span></label>
+          <label class="cb-item"><input type="checkbox" id="optC" checked /><span>法規檢查（連班 / 碎班 / 週休不足）</span></label>
+          <label class="cb-item"><input type="checkbox" id="optD" /><span>顯示除錯資訊</span></label>
         </div>
       </div>
 
-      <div class="error-msg" id="errorMsg"></div>
-      <button class="btn-run" id="runBtn" disabled>請輸入或上傳預定勤務表後開始排班</button>
+      <div class="error-msg" id="err"></div>
+      <button class="btn-run" id="runBtn" disabled>請上傳班表後開始排班</button>
+      <div class="debug-box" id="dbg" style="display:none"></div>
 
-      <!-- Loading -->
-      <div class="loading-block" id="loadingDiv" style="display:none">
+      <!-- 載入中 -->
+      <div class="loading-block" id="loading" style="display:none">
         <div class="loading-spinner"></div>
-        <p class="loading-text" id="loadingText">正在讀取勤務表結構...</p>
-        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+        <p class="loading-text" id="lt">讀取中...</p>
+        <div class="progress-bar"><div class="progress-fill" id="prog"></div></div>
       </div>
 
-      <!-- Result -->
-      <div class="result-block" id="resultBlock" style="display:none">
-        <div class="result-header">
+      <!-- 結果 -->
+      <div id="result" style="display:none">
+        <div class="result-header" style="margin-top:1.5rem">
           <div class="result-title">排班完成</div>
-          <button class="btn-export" id="exportBtn">↓ 匯出 Excel</button>
+          <button class="btn-export" id="expBtn">↓ 匯出 Excel</button>
         </div>
-
-        <!-- Stats -->
-        <div class="result-stats" id="resultStats"></div>
-
-        <!-- Warnings -->
-        <div id="warningBlock"></div>
-
-        <!-- Schedule table -->
-        <div class="preview-title" style="margin-top:1.25rem">完整排班表</div>
-        <div class="schedule-table-wrap" id="scheduleTableWrap"></div>
-
-        <!-- Raw markdown (collapsible) -->
-        <details style="margin-top:1rem">
-          <summary style="font-size:0.8em;font-family:var(--font-mono);color:var(--ink-3);cursor:pointer;padding:4px 0">查看原始文字輸出</summary>
-          <pre id="rawOutput" style="font-size:0.73em;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:1rem;overflow-x:auto;margin-top:8px;white-space:pre-wrap;color:var(--ink-2)"></pre>
+        <div class="result-stats" id="stats"></div>
+        <div id="warns"></div>
+        <div class="schedule-table-wrap" id="tbl"></div>
+        <details style="margin-top:.75rem">
+          <summary style="font-size:.75rem;font-family:var(--font-mono);color:var(--ink-3);cursor:pointer;padding:4px 0">CSV 原始輸出</summary>
+          <pre id="raw" style="font-size:.7rem;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:.75rem;overflow-x:auto;margin-top:6px;white-space:pre-wrap;color:var(--ink-2);max-height:300px;overflow-y:auto"></pre>
         </details>
       </div>
 
     </div><!-- .app-card -->
 
-    <!-- Rules reference -->
+    <!-- 規則說明 -->
     <div class="rules-card">
       <div class="rules-title">排班規則摘要</div>
       <div class="rules-grid">
-        <div class="rule-item">
-          <div class="rule-label">班位清單（11名額）</div>
-          <div class="rule-val">07:00 / 07:30 / 08:00×3 / 09:00×2 / 10:00 / 11:00 / 13:00 / 14:00</div>
-        </div>
-        <div class="rule-item">
-          <div class="rule-label">週一（9人）</div>
-          <div class="rule-val">移除 08:00×1、10:00</div>
-        </div>
-        <div class="rule-item">
-          <div class="rule-label">週二至週五（8人）</div>
-          <div class="rule-val">移除 08:00×1、09:00×1、10:00</div>
-        </div>
-        <div class="rule-item">
-          <div class="rule-label">週末（4人）</div>
-          <div class="rule-val">僅保留 4 個班位</div>
-        </div>
-        <div class="rule-item">
-          <div class="rule-label">課會日（11人）</div>
-          <div class="rule-val">全員上班，使用完整班位清單</div>
-        </div>
-        <div class="rule-item">
-          <div class="rule-label">張語軒專屬</div>
-          <div class="rule-val">固定 08:00，六日及國定假日排休</div>
-        </div>
+        <div class="rule-item"><div class="rule-label">班位清單（11名額）</div>
+          <div class="rule-val">07~16 / 07:30~16:30 / 08~17×3 / 09~18×2 / 10~19 / 11~20 / 13~22 / 14~23</div></div>
+        <div class="rule-item"><div class="rule-label">週一（9人）</div>
+          <div class="rule-val">移除 08~17×1、10~19</div></div>
+        <div class="rule-item"><div class="rule-label">週二至五（8人）</div>
+          <div class="rule-val">移除 08~17×1、09~18×1、10~19</div></div>
+        <div class="rule-item"><div class="rule-label">週末（4人）</div>
+          <div class="rule-val">固定班位：07~16、09~18、11~20、14~23</div></div>
+        <div class="rule-item"><div class="rule-label">課會日（11人）</div>
+          <div class="rule-val">完整班位清單（含2個10~19）</div></div>
+        <div class="rule-item"><div class="rule-label">張語軒專屬</div>
+          <div class="rule-val">固定 08~17，六日國定假日排休，不計入人數</div></div>
+        <div class="rule-item"><div class="rule-label">週休規定</div>
+          <div class="rule-val">每人每週至少 2 天休假，連上不超過 6 天</div></div>
+        <div class="rule-item"><div class="rule-label">班位遞補</div>
+          <div class="rule-val">有人休假時，後面順序人員自動遞補更早班位</div></div>
       </div>
     </div>
 
@@ -182,57 +148,53 @@
   </footer>
 
   <style>
-    .btn-logout { font-size:12px;font-family:var(--font-mono);padding:5px 12px;border-radius:var(--radius);border:1px solid var(--line);background:transparent;color:var(--ink-3);cursor:pointer;transition:all 0.15s;margin-left:0.5rem; }
-    .btn-logout:hover { background:var(--danger-bg);color:var(--danger);border-color:var(--danger); }
-    .input-toggle { display:flex;gap:4px;margin-bottom:1rem; }
-    .tog-btn { font-size:0.8em;font-family:var(--font-mono);padding:6px 16px;border-radius:var(--radius);border:1px solid var(--line);background:transparent;color:var(--ink-3);cursor:pointer;transition:all 0.15s; }
-    .tog-btn.active { background:var(--ink);color:var(--paper);border-color:var(--ink); }
-    .schedule-textarea { width:100%;height:200px;padding:12px;font-size:0.87em;font-family:var(--font-mono);background:var(--paper);border:1px solid var(--paper-3);border-radius:var(--radius);color:var(--ink);resize:vertical;outline:none;transition:border-color 0.15s;line-height:1.6; }
-    .schedule-textarea:focus { border-color:var(--ink-3); }
-    /* Rules card */
-    .rules-card { background:#fff;border:1px solid var(--line);border-radius:var(--radius-lg);padding:1.25rem;margin-top:1.5rem; }
-    .rules-title { font-size:0.73em;font-family:var(--font-mono);letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-3);margin-bottom:1rem; }
-    .rules-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px; }
-    .rule-item { background:var(--paper);border-radius:var(--radius);padding:10px 12px; }
-    .rule-label { font-size:0.73em;font-family:var(--font-mono);color:var(--accent);margin-bottom:4px; }
-    .rule-val { font-size:0.8em;color:var(--ink-2);line-height:1.5; }
-    /* Schedule table */
-    .schedule-table-wrap { overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius); }
-    .schedule-table-wrap table { border-collapse:collapse;font-size:0.73em;white-space:nowrap;width:100%; }
-    .schedule-table-wrap th { background:var(--paper);padding:7px 10px;font-family:var(--font-mono);font-size:0.9em;font-weight:500;color:var(--ink-3);border-bottom:1px solid var(--line);border-right:1px solid var(--line);text-align:center;position:sticky;top:0; }
-    .schedule-table-wrap td { padding:6px 10px;border-bottom:1px solid rgba(14,14,14,0.05);border-right:1px solid rgba(14,14,14,0.05);text-align:center;color:var(--ink); }
-    .schedule-table-wrap td:first-child,.schedule-table-wrap th:first-child { text-align:left;font-weight:500;position:sticky;left:0;background:#fff;z-index:1; }
-    .schedule-table-wrap tr:hover td { background:var(--paper); }
-    .cell-off { color:var(--danger);font-weight:600; }
-    .cell-shift { color:var(--ink);font-size:0.95em; }
-    .cell-filled { background:#f0fdf4;color:var(--success); }
-    /* Warning */
-    .warn-box { padding:10px 14px;border-left:3px solid var(--warn);background:var(--warn-bg);border-radius:0 var(--radius) var(--radius) 0;margin-bottom:8px;font-size:0.87em; }
-    .warn-box strong { color:var(--warn); }
+    .btn-logout{font-size:12px;font-family:var(--font-mono);padding:5px 12px;border-radius:var(--radius);border:1px solid var(--line);background:transparent;color:var(--ink-3);cursor:pointer;transition:all 0.15s;margin-left:.5rem}
+    .btn-logout:hover{background:var(--danger-bg);color:var(--danger);border-color:var(--danger)}
+    .debug-box{font-size:.72rem;font-family:var(--font-mono);background:#1a202c;color:#68d391;padding:1rem;border-radius:var(--radius);max-height:260px;overflow-y:auto;margin-top:.5rem;white-space:pre-wrap}
+    .schedule-table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius)}
+    .schedule-table-wrap table{border-collapse:collapse;font-size:.73rem;white-space:nowrap;width:100%}
+    .schedule-table-wrap th{background:var(--paper);padding:6px 9px;font-family:var(--font-mono);font-size:.7rem;font-weight:500;color:var(--ink-3);border-bottom:1px solid var(--line);border-right:1px solid rgba(14,14,14,.06);text-align:center;position:sticky;top:0}
+    .schedule-table-wrap td{padding:5px 9px;border-bottom:1px solid rgba(14,14,14,.05);border-right:1px solid rgba(14,14,14,.04);text-align:center;color:var(--ink)}
+    .schedule-table-wrap td:first-child,.schedule-table-wrap th:first-child{text-align:left;font-weight:500;position:sticky;left:0;background:#fff;z-index:1}
+    .schedule-table-wrap tr:hover td{background:var(--paper)}
+    .off{color:#c53030;font-weight:600}
+    .new{color:#15803d;font-style:italic}
+    .rules-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius-lg);padding:1.25rem;margin-top:1.5rem}
+    .rules-title{font-size:.73rem;font-family:var(--font-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-bottom:1rem}
+    .rules-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+    .rule-item{background:var(--paper);border-radius:var(--radius);padding:10px 12px}
+    .rule-label{font-size:.73rem;font-family:var(--font-mono);color:var(--accent);margin-bottom:4px}
+    .rule-val{font-size:.8rem;color:var(--ink-2);line-height:1.5}
+    .result-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem}
+    .result-title{font-size:.95rem;font-weight:500}
+    .btn-export{padding:9px 20px;font-size:.83rem;font-weight:500;background:var(--ink);color:var(--paper);border:none;border-radius:var(--radius);cursor:pointer;transition:.15s}
+    .btn-export:hover{background:#3a3a3a}
+    .wb{padding:9px 13px;border-left:3px solid #b45309;background:#fef3c7;border-radius:0 6px 6px 0;margin-bottom:7px;font-size:.83rem}
+    .wb strong{color:#b45309}
+    .ob{padding:9px 13px;border-left:3px solid #15803d;background:#dcfce7;border-radius:0 6px 6px 0;margin-bottom:7px;font-size:.83rem}
+    .ob strong{color:#15803d}
+    .empty{color:#9a9a9a}
   </style>
 
   <script src="app.js"></script>
   <script>
-    const SIZE_MAP = {'fs-sm':'13px','fs-md':'15px','fs-lg':'18px','fs-xl':'21px'};
-    const STORAGE_KEY = 'opshub_fontsize';
-    const btns = document.querySelectorAll('.fsc-btn[data-size]');
-    function applySize(size) {
-      document.documentElement.style.fontSize = SIZE_MAP[size] || '15px';
-      btns.forEach(b => b.classList.toggle('active', b.dataset.size === size));
-      localStorage.setItem(STORAGE_KEY, size);
+    // 字體大小控制
+    const SIZE_MAP={'fs-sm':'13px','fs-md':'15px','fs-lg':'18px','fs-xl':'21px'};
+    const btns=document.querySelectorAll('.fsc-btn[data-size]');
+    function applySize(size){
+      document.documentElement.style.fontSize=SIZE_MAP[size]||'15px';
+      btns.forEach(b=>b.classList.toggle('active',b.dataset.size===size));
+      localStorage.setItem('opshub_fontsize',size);
     }
-    applySize(localStorage.getItem(STORAGE_KEY) || 'fs-md');
-    btns.forEach(btn => btn.addEventListener('click', () => applySize(btn.dataset.size)));
+    applySize(localStorage.getItem('opshub_fontsize')||'fs-md');
+    btns.forEach(btn=>btn.addEventListener('click',()=>applySize(btn.dataset.size)));
 
-    function logout() {
-      if (confirm('確定要登出嗎？')) { AUTH.logout(); window.location.replace('../../login.html'); }
+    function logout(){
+      if(confirm('確定要登出嗎？')){AUTH.logout();window.location.replace('../../login.html');}
     }
     (function(){
-      const s = AUTH.getSession();
-      if (s && s.role === 'admin') {
-        const el = document.getElementById('nav-admin');
-        if (el) el.style.display = '';
-      }
+      const s=AUTH.getSession();
+      if(s&&s.role==='admin'){const el=document.getElementById('nav-admin');if(el)el.style.display='';}
     })();
   </script>
 </body>
