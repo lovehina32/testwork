@@ -103,7 +103,7 @@
           </div>
           <div class="result-stats" id="gen-stats"></div>
           <div class="dr-section-label"><span class="dr-label-gen">一般業務</span>　預覽（前 50 筆）</div>
-          <div class="schedule-table-wrap" id="gen-tbl"></div>
+          <div class="dr-table-wrap" id="gen-tbl"></div>
         </div>
 
       </div><!-- /panel-gen -->
@@ -153,9 +153,9 @@
           </div>
           <div class="result-stats" id="ec-stats"></div>
           <div class="dr-section-label" style="margin-top:.75rem"><span class="dr-label-shop">Step 1 · 店舖</span>　大類別→中類別→店號</div>
-          <div class="schedule-table-wrap" id="ec-tbl1"></div>
+          <div class="dr-table-wrap" id="ec-tbl1"></div>
           <div class="dr-section-label" style="margin-top:1rem"><span class="dr-label-cust">Step 2 · 消費者</span>　大類別→中類別→案件屬性</div>
-          <div class="schedule-table-wrap" id="ec-tbl2"></div>
+          <div class="dr-table-wrap" id="ec-tbl2"></div>
         </div>
 
       </div><!-- /panel-ec -->
@@ -182,61 +182,6 @@
     </div>
   </footer>
 
-  <style>
-    .btn-logout{font-size:12px;font-family:var(--font-mono);padding:5px 12px;border-radius:var(--radius);border:1px solid var(--line);background:transparent;color:var(--ink-3);cursor:pointer;transition:all .15s;margin-left:.5rem}
-    .btn-logout:hover{background:var(--danger-bg);color:var(--danger);border-color:var(--danger)}
-
-    /* ── 分頁 ── */
-    .dr-tabs{display:flex;gap:0;border-bottom:2px solid var(--line);margin-bottom:1.25rem}
-    .dr-tab{padding:.6rem 1.25rem;font-size:.87rem;font-weight:500;color:var(--ink-3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:.15s;display:flex;align-items:center;gap:.45rem;user-select:none}
-    .dr-tab:hover{color:var(--ink)}
-    .dr-tab.active{color:var(--ink);border-bottom-color:var(--ink)}
-    .dr-tab-badge{font-family:var(--font-mono);font-size:.62rem;padding:2px 7px;border-radius:3px;font-weight:500}
-    .dr-tab-badge.gen{background:#FDF3E3;color:#B7770D}
-    .dr-tab-badge.ec {background:#E8F4FD;color:#2471A3}
-
-    /* ── Panel ── */
-    .dr-panel{display:none}
-    .dr-panel.active{display:block}
-
-    /* ── 流程說明 ── */
-    .dr-flow-info{font-size:.78rem;color:var(--ink-3);margin-top:.6rem;line-height:1.6}
-    .dr-flow-info strong{color:var(--ink-2)}
-
-    /* ── 區段標籤 ── */
-    .dr-section-label{font-family:var(--font-mono);font-size:.7rem;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);padding:.4rem 0;margin-bottom:.3rem;border-bottom:1px solid var(--line)}
-    .dr-section-label span{display:inline-block;padding:2px 8px;border-radius:3px;font-size:.65rem;margin-right:.5rem}
-    .dr-label-gen {background:#FDF3E3;color:#B7770D}
-    .dr-label-shop{background:#FDF3E3;color:#B7770D}
-    .dr-label-cust{background:#EAFAF1;color:#1E8449}
-
-    /* ── 結果區 ── */
-    .result-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem}
-    .result-title{font-size:.95rem;font-weight:500}
-    .btn-export{padding:9px 20px;font-size:.83rem;font-weight:500;background:var(--ink);color:var(--paper);border:none;border-radius:var(--radius);cursor:pointer;text-decoration:none;transition:.15s}
-    .btn-export:hover{background:#3a3a3a}
-
-    /* ── 表格 ── */
-    .schedule-table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius);max-height:380px;overflow-y:auto;margin-top:.4rem}
-    .schedule-table-wrap table{border-collapse:collapse;font-size:.71rem;white-space:nowrap;width:100%}
-    .schedule-table-wrap th{background:var(--paper);padding:6px 8px;font-family:var(--font-mono);font-weight:500;font-size:.67rem;color:var(--ink-3);border-bottom:1px solid var(--line);border-right:1px solid rgba(14,14,14,.06);text-align:center;position:sticky;top:0;z-index:1}
-    .schedule-table-wrap td{padding:5px 8px;border-bottom:1px solid rgba(14,14,14,.04);border-right:1px solid rgba(14,14,14,.04);color:var(--ink);max-width:260px;white-space:normal;word-break:break-all}
-    .schedule-table-wrap td.ctr{text-align:center}
-    .schedule-table-wrap th:first-child,.schedule-table-wrap td:first-child{text-align:center;position:sticky;left:0;background:#fff;z-index:2}
-    .schedule-table-wrap tr:hover td{background:var(--paper)}
-    .schedule-table-wrap tr:hover td:first-child{background:var(--paper)}
-    .schedule-table-wrap tr.cust-row td{background:#FAFFFE}
-    .schedule-table-wrap tr.cust-row:hover td{background:#EAFAF1}
-    .schedule-table-wrap tr.cust-row td:first-child{background:#FAFFFE}
-    .schedule-table-wrap tr.cust-row:hover td:first-child{background:#EAFAF1}
-
-    /* 統計 */
-    .result-stats{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:1rem}
-    .stat-pill{font-size:.78rem;font-family:var(--font-mono);padding:4px 12px;border-radius:var(--radius);border:1px solid var(--line);background:var(--paper);color:var(--ink-2)}
-    .stat-pill strong{color:var(--ink)}
-    .stat-pill.shop{border-color:#E8A838;background:#FDF3E3}
-    .stat-pill.ec  {border-color:#2980B9;background:#E8F4FD}
-  </style>
 
   <script src="app.js"></script>
   <script>
