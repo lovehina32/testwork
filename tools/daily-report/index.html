@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>來電日報產生器 — 日翊客服小工具</title>
+  <link rel="stylesheet" href="../../shared.css" />
+  <link rel="stylesheet" href="tool.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+  <script src="../../auth.js"></script>
+  <script>AUTH.guard(null, '../../login.html');</script>
+  <div class="page-bg"></div>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="../../home.html" class="logo">
+        <span class="logo-icon">⬡</span>
+        <span class="logo-text">日翊客服小工具</span>
+      </a>
+      <nav class="site-nav">
+        <a href="../../home.html">首頁</a>
+        <a href="../../tools/scheduling/index.html">客服排班</a>
+        <a href="../../home.html?tab=frontline" class="nav-active">一線客服人員</a>
+        <a href="../../home.html?tab=vendor">廠商客服人員</a>
+        <a href="../../admin.html" id="nav-admin" style="display:none;color:var(--warn)">帳號管理</a>
+        <button class="btn-logout" onclick="logout()">登出</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="tool-main">
+    <div class="breadcrumb">
+      <a href="../../home.html">日翊客服小工具</a>
+      <span>/</span>
+      <a href="../../home.html?tab=frontline">一線客服人員</a>
+      <span>/</span>
+      <span>來電日報產生器</span>
+    </div>
+
+    <section class="tool-hero">
+      <div class="tool-hero-tag">日報自動化</div>
+      <h1 class="tool-hero-title">來電日報<br><em>產生器</em></h1>
+      <p class="tool-hero-sub">上傳每日轉出報表，自動篩選 17 點前資料並依規則排序，輸出標準日報 Excel</p>
+    </section>
+
+    <div class="app-card">
+
+      <!-- ── 分頁 ──────────────────────────── -->
+      <div class="dr-tabs">
+        <div class="dr-tab active" onclick="switchTab('gen', this)">
+          <span>一般業務日報</span>
+          <span class="dr-tab-badge gen">GEN</span>
+        </div>
+        <div class="dr-tab" onclick="switchTab('ec', this)">
+          <span>EC業務日報</span>
+          <span class="dr-tab-badge ec">EC</span>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════
+           Panel：一般業務
+      ══════════════════════════════════════ -->
+      <div class="dr-panel active" id="panel-gen">
+
+        <div class="config-block">
+          <div class="config-title">上傳每日轉出報表 — 一般業務 <span class="badge badge-info">.xls / .xlsx</span></div>
+          <div class="upload-zone" id="gen-zone">
+            <input type="file" id="gen-fi" accept=".xls,.xlsx" />
+            <div class="upload-inner">
+              <div class="upload-glyph">↑</div>
+              <p class="upload-primary">拖放或點擊上傳「每日轉出報表」</p>
+              <p class="upload-secondary">一般業務轉出報表 · .xls / .xlsx</p>
+            </div>
+          </div>
+          <div class="file-info-bar" id="gen-fbar" style="display:none">
+            <span class="fi-icon">📊</span>
+            <div class="fi-meta">
+              <div class="fi-name" id="gen-fnm"></div>
+              <div class="fi-size" id="gen-fsz"></div>
+            </div>
+            <button class="fi-remove" onclick="genClr()">✕</button>
+          </div>
+          <p class="dr-flow-info">
+            篩選 <strong>時間 &lt; 17:00</strong> → 排序：<strong>大類別</strong> → <strong>中類別</strong> → <strong>店號</strong>
+          </p>
+        </div>
+
+        <div class="error-msg" id="gen-err"></div>
+        <button class="btn-run" id="gen-runBtn" disabled>請上傳報表後開始</button>
+
+        <div class="loading-block" id="gen-loading" style="display:none">
+          <div class="loading-spinner"></div>
+          <p class="loading-text" id="gen-lt">讀取中...</p>
+          <div class="progress-bar"><div class="progress-fill" id="gen-prog"></div></div>
+        </div>
+
+        <div id="gen-result" style="display:none">
+          <div class="result-header" style="margin-top:1.5rem">
+            <div class="result-title" id="gen-rt">—</div>
+            <a class="btn-export" id="gen-dl" href="#" download="">↓ 下載 Excel</a>
+          </div>
+          <div class="result-stats" id="gen-stats"></div>
+          <div class="dr-section-label"><span class="dr-label-gen">一般業務</span>　預覽（前 50 筆）</div>
+          <div class="schedule-table-wrap" id="gen-tbl"></div>
+        </div>
+
+      </div><!-- /panel-gen -->
+
+      <!-- ══════════════════════════════════════
+           Panel：EC業務
+      ══════════════════════════════════════ -->
+      <div class="dr-panel" id="panel-ec">
+
+        <div class="config-block">
+          <div class="config-title">上傳每日轉出報表 — EC業務 <span class="badge badge-info">.xls / .xlsx</span></div>
+          <div class="upload-zone" id="ec-zone">
+            <input type="file" id="ec-fi" accept=".xls,.xlsx" />
+            <div class="upload-inner">
+              <div class="upload-glyph">↑</div>
+              <p class="upload-primary">拖放或點擊上傳「每日轉出報表」</p>
+              <p class="upload-secondary">EC業務轉出報表 · .xls / .xlsx</p>
+            </div>
+          </div>
+          <div class="file-info-bar" id="ec-fbar" style="display:none">
+            <span class="fi-icon">📊</span>
+            <div class="fi-meta">
+              <div class="fi-name" id="ec-fnm"></div>
+              <div class="fi-size" id="ec-fsz"></div>
+            </div>
+            <button class="fi-remove" onclick="ecClr()">✕</button>
+          </div>
+          <p class="dr-flow-info">
+            <strong>Step 1</strong> 案件來源＝店舖 → 排序：<strong>大類別 → 中類別 → 店號</strong>　／　
+            <strong>Step 2</strong> 案件來源＝消費者 → 排序：<strong>大類別 → 中類別 → 案件屬性</strong>
+          </p>
+        </div>
+
+        <div class="error-msg" id="ec-err"></div>
+        <button class="btn-run" id="ec-runBtn" disabled>請上傳報表後開始</button>
+
+        <div class="loading-block" id="ec-loading" style="display:none">
+          <div class="loading-spinner"></div>
+          <p class="loading-text" id="ec-lt">讀取中...</p>
+          <div class="progress-bar"><div class="progress-fill" id="ec-prog"></div></div>
+        </div>
+
+        <div id="ec-result" style="display:none">
+          <div class="result-header" style="margin-top:1.5rem">
+            <div class="result-title" id="ec-rt">—</div>
+            <a class="btn-export" id="ec-dl" href="#" download="">↓ 下載 Excel</a>
+          </div>
+          <div class="result-stats" id="ec-stats"></div>
+          <div class="dr-section-label" style="margin-top:.75rem"><span class="dr-label-shop">Step 1 · 店舖</span>　大類別→中類別→店號</div>
+          <div class="schedule-table-wrap" id="ec-tbl1"></div>
+          <div class="dr-section-label" style="margin-top:1rem"><span class="dr-label-cust">Step 2 · 消費者</span>　大類別→中類別→案件屬性</div>
+          <div class="schedule-table-wrap" id="ec-tbl2"></div>
+        </div>
+
+      </div><!-- /panel-ec -->
+
+    </div><!-- .app-card -->
+
+    <div class="tool-switch-bar">
+      <span class="tsb-label">切換工具</span>
+      <a href="../../tools/logistics-analyzer/index.html" class="tsb-link"><span>📊</span> 物流數據分析 →</a>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-top">
+        <div class="footer-brand"><span class="logo-icon">⬡</span><span class="logo-text">日翊客服小工具</span></div>
+        <div class="footer-links">
+          <a href="../../home.html">首頁</a>
+          <a href="../../tools/logistics-analyzer/index.html">物流分析</a>
+          <a href="../../tools/claims-processor/index.html">壓賠整合</a>
+        </div>
+      </div>
+      <div class="footer-bottom"><p>© 2025 日翊客服小工具 · 來電日報產生器</p></div>
+    </div>
+  </footer>
+
+  <style>
+    .btn-logout{font-size:12px;font-family:var(--font-mono);padding:5px 12px;border-radius:var(--radius);border:1px solid var(--line);background:transparent;color:var(--ink-3);cursor:pointer;transition:all .15s;margin-left:.5rem}
+    .btn-logout:hover{background:var(--danger-bg);color:var(--danger);border-color:var(--danger)}
+
+    /* ── 分頁 ── */
+    .dr-tabs{display:flex;gap:0;border-bottom:2px solid var(--line);margin-bottom:1.25rem}
+    .dr-tab{padding:.6rem 1.25rem;font-size:.87rem;font-weight:500;color:var(--ink-3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:.15s;display:flex;align-items:center;gap:.45rem;user-select:none}
+    .dr-tab:hover{color:var(--ink)}
+    .dr-tab.active{color:var(--ink);border-bottom-color:var(--ink)}
+    .dr-tab-badge{font-family:var(--font-mono);font-size:.62rem;padding:2px 7px;border-radius:3px;font-weight:500}
+    .dr-tab-badge.gen{background:#FDF3E3;color:#B7770D}
+    .dr-tab-badge.ec {background:#E8F4FD;color:#2471A3}
+
+    /* ── Panel ── */
+    .dr-panel{display:none}
+    .dr-panel.active{display:block}
+
+    /* ── 流程說明 ── */
+    .dr-flow-info{font-size:.78rem;color:var(--ink-3);margin-top:.6rem;line-height:1.6}
+    .dr-flow-info strong{color:var(--ink-2)}
+
+    /* ── 區段標籤 ── */
+    .dr-section-label{font-family:var(--font-mono);font-size:.7rem;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);padding:.4rem 0;margin-bottom:.3rem;border-bottom:1px solid var(--line)}
+    .dr-section-label span{display:inline-block;padding:2px 8px;border-radius:3px;font-size:.65rem;margin-right:.5rem}
+    .dr-label-gen {background:#FDF3E3;color:#B7770D}
+    .dr-label-shop{background:#FDF3E3;color:#B7770D}
+    .dr-label-cust{background:#EAFAF1;color:#1E8449}
+
+    /* ── 結果區 ── */
+    .result-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem}
+    .result-title{font-size:.95rem;font-weight:500}
+    .btn-export{padding:9px 20px;font-size:.83rem;font-weight:500;background:var(--ink);color:var(--paper);border:none;border-radius:var(--radius);cursor:pointer;text-decoration:none;transition:.15s}
+    .btn-export:hover{background:#3a3a3a}
+
+    /* ── 表格 ── */
+    .schedule-table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius);max-height:380px;overflow-y:auto;margin-top:.4rem}
+    .schedule-table-wrap table{border-collapse:collapse;font-size:.71rem;white-space:nowrap;width:100%}
+    .schedule-table-wrap th{background:var(--paper);padding:6px 8px;font-family:var(--font-mono);font-weight:500;font-size:.67rem;color:var(--ink-3);border-bottom:1px solid var(--line);border-right:1px solid rgba(14,14,14,.06);text-align:center;position:sticky;top:0;z-index:1}
+    .schedule-table-wrap td{padding:5px 8px;border-bottom:1px solid rgba(14,14,14,.04);border-right:1px solid rgba(14,14,14,.04);color:var(--ink);max-width:260px;white-space:normal;word-break:break-all}
+    .schedule-table-wrap td.ctr{text-align:center}
+    .schedule-table-wrap th:first-child,.schedule-table-wrap td:first-child{text-align:center;position:sticky;left:0;background:#fff;z-index:2}
+    .schedule-table-wrap tr:hover td{background:var(--paper)}
+    .schedule-table-wrap tr:hover td:first-child{background:var(--paper)}
+    .schedule-table-wrap tr.cust-row td{background:#FAFFFE}
+    .schedule-table-wrap tr.cust-row:hover td{background:#EAFAF1}
+    .schedule-table-wrap tr.cust-row td:first-child{background:#FAFFFE}
+    .schedule-table-wrap tr.cust-row:hover td:first-child{background:#EAFAF1}
+
+    /* 統計 */
+    .result-stats{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:1rem}
+    .stat-pill{font-size:.78rem;font-family:var(--font-mono);padding:4px 12px;border-radius:var(--radius);border:1px solid var(--line);background:var(--paper);color:var(--ink-2)}
+    .stat-pill strong{color:var(--ink)}
+    .stat-pill.shop{border-color:#E8A838;background:#FDF3E3}
+    .stat-pill.ec  {border-color:#2980B9;background:#E8F4FD}
+  </style>
+
+  <script src="app.js"></script>
+  <script>
+    function logout(){
+      if(confirm('確定要登出嗎？')){AUTH.logout();window.location.replace('../../login.html');}
+    }
+    (function(){
+      const s=AUTH.getSession();
+      if(s&&s.role==='admin'){const el=document.getElementById('nav-admin');if(el)el.style.display='';}
+    })();
+
+    const SIZE_MAP={'fs-sm':'13px','fs-md':'15px','fs-lg':'18px','fs-xl':'21px'};
+    const btns=document.querySelectorAll('.fsc-btn[data-size]');
+    function applySize(size){document.documentElement.style.fontSize=SIZE_MAP[size]||'15px';btns.forEach(b=>b.classList.toggle('active',b.dataset.size===size));localStorage.setItem('opshub_fontsize',size);}
+    applySize(localStorage.getItem('opshub_fontsize')||'fs-md');
+    btns.forEach(btn=>btn.addEventListener('click',()=>applySize(btn.dataset.size)));
+  </script>
+</body>
+</html>
