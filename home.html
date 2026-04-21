@@ -43,7 +43,7 @@
       </div>
       <div class="hero-visual">
         <div class="visual-grid">
-          <div class="vg-card vg-a"><div class="vg-num">3</div><div class="vg-label">整合工具</div></div>
+          <div class="vg-card vg-a"><div class="vg-num">4</div><div class="vg-label">整合工具</div></div>
           <div class="vg-card vg-b"><div class="vg-num">6</div><div class="vg-label">SOP 步驟自動化</div></div>
           <div class="vg-card vg-c"><div class="vg-num">18</div><div class="vg-label">壓賠輸出欄位</div></div>
           <div class="vg-card vg-d"><div class="vg-num">0</div><div class="vg-label">伺服器上傳</div></div>
@@ -56,6 +56,28 @@
       <div class="tools-inner">
         <div class="section-label" id="toolsSectionLabel">工具選擇</div>
         <div class="tools-grid" id="toolsGrid">
+
+          <!-- Tool 0：來電日報（一線客服） -->
+          <a href="tools/daily-report/index.html" class="tool-card" id="card-daily-report" data-group="frontline">
+            <div class="tc-header">
+              <div class="tc-icon">📝</div>
+              <div class="tc-badge tc-badge-amber">日報自動化</div>
+            </div>
+            <h2 class="tc-title">來電日報<br>產生器</h2>
+            <p class="tc-desc">上傳每日轉出報表，自動篩選 17 點前資料並依規則排序，輸出標準一般業務／EC 業務日報 Excel。</p>
+            <div class="tc-features">
+              <div class="tc-feat"><span class="feat-dot"></span>一般業務：大類別→中類別→店號排序</div>
+              <div class="tc-feat"><span class="feat-dot"></span>EC業務：店舖段 + 消費者段分段輸出</div>
+              <div class="tc-feat"><span class="feat-dot"></span>自動抽取日期、篩選 17 點前</div>
+              <div class="tc-feat"><span class="feat-dot"></span>標準格式範本 + 一鍵下載 Excel</div>
+            </div>
+            <div class="tc-footer">
+              <span class="tc-tag">XLS</span>
+              <span class="tc-tag">Excel</span>
+              <span class="tc-tag tc-tag-group">一線客服</span>
+              <span class="tc-enter">進入工具 →</span>
+            </div>
+          </a>
 
           <!-- Tool 1：物流分析（一線客服） -->
           <a href="tools/logistics-analyzer/index.html" class="tool-card" id="card-logistics" data-group="frontline">
@@ -177,6 +199,7 @@
         <div class="footer-links">
           <a href="tools/logistics-analyzer/index.html">物流分析工具</a>
           <a href="tools/claims-processor/index.html">壓賠整合工具</a>
+          <a href="tools/daily-report/index.html">來電日報產生器</a>
         </div>
       </div>
       <div class="footer-bottom">
@@ -266,6 +289,8 @@
         card.style.display = (inTab && hasPerm) ? '' : 'none';
       }
 
+      const cardDailyReport = document.getElementById('card-daily-report');
+      if (cardDailyReport) showCard(cardDailyReport, 'logistics', 'frontline');
       showCard(cardLogistics,  'logistics',  'frontline');
       showCard(cardClaims,     'claims',     'vendor');
       // 排班工具：僅在首頁（tab=all）顯示，一線/廠商分頁不顯示
@@ -277,7 +302,8 @@
 
       // 空狀態
       const cardSched2 = document.getElementById('card-scheduling');
-      const visible = [cardLogistics, cardClaims, cardSched2].filter(c => c && c.style.display !== 'none');
+      const cardDR2    = document.getElementById('card-daily-report');
+      const visible = [cardLogistics, cardClaims, cardSched2, cardDR2].filter(c => c && c.style.display !== 'none');
       emptyState.style.display    = visible.length === 0 ? 'block' : 'none';
       howSection.style.display    = tab === 'all' ? '' : 'none';
     })();
