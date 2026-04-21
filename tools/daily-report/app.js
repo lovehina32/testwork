@@ -3,8 +3,8 @@
    分頁切換
 ════════════════════════════════════════════════ */
 function switchTab(id, el){
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.dr-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.dr-panel').forEach(p=>p.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('panel-'+id).classList.add('active');
 }
