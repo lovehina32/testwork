@@ -131,8 +131,9 @@
       </div>
       <div class="form-section-label" id="toolsLabel">開放工具</div>
       <div class="tools-check" id="toolsCheck">
-        <label><input type="checkbox" id="toolLogistics" checked /> 物流數據分析</label>
-        <label><input type="checkbox" id="toolClaims"    checked /> 壓賠資料整合</label>
+        <label><input type="checkbox" id="toolLogistics"   checked /> 物流數據分析</label>
+        <label><input type="checkbox" id="toolClaims"      checked /> 壓賠資料整合</label>
+        <label><input type="checkbox" id="toolDailyReport" checked /> 來電日報產生器</label>
       </div>
       <button class="btn-add" onclick="addUser()">新增帳號</button>
       <div class="form-msg" id="formMsg"></div>
@@ -203,12 +204,13 @@
       const role        = document.getElementById('newRole').value;
       const logistics   = document.getElementById('toolLogistics').checked;
       const claims      = document.getElementById('toolClaims').checked;
+      const dailyReport = document.getElementById('toolDailyReport').checked;
       const msgEl       = document.getElementById('formMsg');
 
       if (!username || !password) { showFormMsg('err', '帳號與密碼為必填欄位'); return; }
       if (!/^[a-zA-Z0-9_\u4e00-\u9fa5]+$/.test(username)) { showFormMsg('err', '帳號僅允許英數字、底線或中文'); return; }
 
-      const res = AUTH.addUser({ username, displayName: displayName || username, password, role, tools: { logistics, claims } });
+      const res = AUTH.addUser({ username, displayName: displayName || username, password, role, tools: { logistics, claims, dailyReport } });
       if (res.ok) {
         showFormMsg('ok', `帳號「${username}」已成功建立`);
         document.getElementById('newUsername').value    = '';
@@ -273,11 +275,11 @@
       const counter = document.getElementById('userCount');
       counter.textContent = `共 ${users.length} 筆`;
 
-      const TOOL_NAMES = { logistics:'物流分析', claims:'壓賠整合' };
+      const TOOL_NAMES = { logistics:'物流分析', claims:'壓賠整合', dailyReport:'來電日報' };
 
       tbody.innerHTML = users.map(u => {
         const isAdmin   = u.role === 'admin';
-        const tools     = u.tools || { logistics: true, claims: true };
+        const tools     = u.tools || { logistics: true, claims: true, dailyReport: true };
         const toolsHtml = isAdmin
           ? `<span class="tool-chip on">全部開放</span>`
           : Object.entries(TOOL_NAMES).map(([key, name]) => `
