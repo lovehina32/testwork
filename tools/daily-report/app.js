@@ -3,6 +3,16 @@
 /* ════════════════════════════════════════════════
    共用工具
 ════════════════════════════════════════════════ */
+/* ── 排序：英文/數字開頭優先，再依字典序 ── */
+function sortKey(v) {
+  v = v || '';
+  const isAscii = v.length > 0 && v.charCodeAt(0) < 128;
+  return (isAscii ? '0' : '1') + v;
+}
+function cmpStr(x, y) {
+  return sortKey(x).localeCompare(sortKey(y), 'zh-Hant');
+}
+
 const fmtSz = b => b<1024?b+' B':b<1048576?Math.round(b/1024)+' KB':(b/1048576).toFixed(1)+' MB';
 const extractMMDD = raw => { const s=String(raw).replace(/[^0-9]/g,''); return s.length>=4?s.slice(-4):'MMDD'; };
 const isOff = v => v===undefined||v===null||String(v).trim()==='';
@@ -105,8 +115,7 @@ document.getElementById('gen-runBtn').addEventListener('click',()=>{
       rows.sort((a,b)=>{
         const cr=catRank(a['大類別'])-catRank(b['大類別']);
         if(cr!==0) return cr;
-        const cmp=(x,y)=>(x||'').localeCompare(y||'','zh-Hant');
-        return cmp(a['中類別'],b['中類別'])||cmp(a['店號'],b['店號']);
+        return cmpStr(a['中類別'],b['中類別'])||cmpStr(a['店號'],b['店號']);
       });
 
       setP('gen','產出 Excel...',82);
@@ -212,16 +221,14 @@ document.getElementById('ec-runBtn').addEventListener('click',()=>{
       setP('ec','Step1 篩選店舖...',35);
       let shop=all.filter(r=>r['案件來源']==='店舖'&&r['時間']<'17:00:00');
       shop.sort((a,b)=>{
-        const cmp=(x,y)=>(x||'').localeCompare(y||'','zh-Hant');
-        return cmp(a['大類別'],b['大類別'])||cmp(a['中類別'],b['中類別'])||cmp(a['店號'],b['店號']);
+        return cmpStr(a['大類別'],b['大類別'])||cmpStr(a['中類別'],b['中類別'])||cmpStr(a['店號'],b['店號']);
       });
 
       setP('ec','Step2 篩選消費者...',60);
       let cust=all.filter(r=>r['案件來源']==='消費者'&&r['時間']<'17:00:00');
       cust=cust.map(r=>({...r,'店號':'消費者','店名':r['消費者姓名']||''}));
       cust.sort((a,b)=>{
-        const cmp=(x,y)=>(x||'').localeCompare(y||'','zh-Hant');
-        return cmp(a['大類別'],b['大類別'])||cmp(a['中類別'],b['中類別'])||cmp(a['案件屬性'],b['案件屬性']);
+        return cmpStr(a['大類別'],b['大類別'])||cmpStr(a['中類別'],b['中類別'])||cmpStr(a['案件屬性'],b['案件屬性']);
       });
 
       setP('ec','產出 Excel...',80);
