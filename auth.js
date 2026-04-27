@@ -16,7 +16,8 @@ const AUTH = (function () {
       enabled: true,
       tools: {                // 工具開關（僅 user 角色有效，admin 全開）
         logistics: true,
-        claims: true
+        claims: true,
+        dailyReport: true
       }
     }
   ];
@@ -81,8 +82,8 @@ const AUTH = (function () {
     const users = getUsers();
     const user  = users.find(u => u.username === username);
     if (!user) return { logistics: false, claims: false };
-    if (user.role === 'admin') return { logistics: true, claims: true };
-    return user.tools || { logistics: true, claims: true };
+    if (user.role === 'admin') return { logistics: true, claims: true, dailyReport: true };
+    return user.tools || { logistics: true, claims: true, dailyReport: true };
   }
 
   // ── 新增帳號 ──────────────────────────────────────────────
@@ -95,7 +96,7 @@ const AUTH = (function () {
       role:        data.role || 'user',
       displayName: data.displayName || data.username,
       enabled:     true,
-      tools:       data.tools || { logistics: true, claims: true }
+      tools:       data.tools || { logistics: true, claims: true, dailyReport: true }
     });
     saveUsers(users);
     return { ok: true };
