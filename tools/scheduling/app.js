@@ -76,7 +76,7 @@ function setupRunBtn() {
       const resp = await fetch(API_URL, {
         method: 'POST',
         body: form,
-        signal: AbortSignal.timeout(180000)
+        signal: AbortSignal.timeout(300000)
       });
 
       setP('接收結果...', 85);
@@ -110,7 +110,7 @@ function setupRunBtn() {
       btn.disabled = false;
       btn.textContent = '重新排班';
       if (err.name === 'TimeoutError' || err.name === 'AbortError') {
-        showErr('求解超時（超過 3 分鐘），請稍後再試或聯繫管理員');
+        showErr('求解超時（超過 5 分鐘），請稍後再試或聯繫管理員');
       } else if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
         showErr('無法連線至排班伺服器，請確認網路連線或聯繫管理員');
       } else {
