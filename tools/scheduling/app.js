@@ -1,13 +1,30 @@
 /* ══════════════════════════════════════════════════════
-   日翊客服排班工具 app.js  v3.1
+   日翊客服排班工具 app.js  v3.2
    前端 → GCP Cloud Run API → LP 求解 → 下載排班結果 xlsx
+   v3.2 新增：
+     - 頁面載入時靜默 ping 後端（喚醒 Cloud Run）
+     - 求解逾時（120秒無回應）自動重試一次
 ══════════════════════════════════════════════════════ */
 
 // ── GCP API 端點 ─────────────────────────────────────────
-const API_URL = 'https://rz-scheduler-v2-587734217935.asia-east1.run.app/api/schedule';
+const API_URL    = 'https://rz-scheduler-v2-587734217935.asia-east1.run.app/api/schedule';
+const HEALTH_URL = 'https://rz-scheduler-v2-587734217935.asia-east1.run.app/health';
+
+// 第一次無回應超過此毫秒數時自動重試
+const FIRST_ATTEMPT_TIMEOUT_MS = 120000; // 120 秒
+const TOTAL_TIMEOUT_MS         = 300000; // 5 分鐘（最終 timeout）
 
 /* ── DOM 安全取得 ──────────────────────────────────────── */
 const $ = id => document.getElementById(id);
+
+/* ── 【新增】頁面載入時靜默喚醒後端 ─────────────────────
+   不等待結果、不影響 UI，純粹讓 Cloud Run 保持熱機狀態  */
+function warmupBackend() {
+  fetch(HEALTH_URL, {
+    method: 'GET',
+    signal: AbortSignal.timeout(30000)
+  }).catch(() => {/* 靜默忽略，喚醒失敗不影響使用者 */});
+}
 
 /* ── 上傳處理 ─────────────────────────────────────────── */
 let uploadedFile = null;
@@ -52,6 +69,17 @@ function clrFile() {
   hideErr();
 }
 
+/* ── 【新增】單次 API 呼叫（帶獨立 timeout）──────────────── */
+async function callScheduleAPI(file, timeoutMs) {
+  const form = new FormData();
+  form.append('file', file, file.name);
+  return await fetch(API_URL, {
+    method: 'POST',
+    body: form,
+    signal: AbortSignal.timeout(timeoutMs)
+  });
+}
+
 /* ── 主流程：呼叫 GCP API ─────────────────────────────── */
 function setupRunBtn() {
   const btn = $('runBtn');
@@ -68,16 +96,26 @@ function setupRunBtn() {
     setP('上傳班表至 GCP...', 20);
 
     try {
-      const form = new FormData();
-      form.append('file', uploadedFile, uploadedFile.name);
-
       setP('LP 最佳化求解中（約 30~90 秒）...', 40);
 
-      const resp = await fetch(API_URL, {
-        method: 'POST',
-        body: form,
-        signal: AbortSignal.timeout(300000)
-      });
+      let resp;
+      try {
+        // ── 第一次嘗試，120 秒 timeout ──────────────────
+        resp = await callScheduleAPI(uploadedFile, FIRST_ATTEMPT_TIMEOUT_MS);
+      } catch (firstErr) {
+        // 第一次 timeout 或網路中斷 → 自動重試一次
+        if (firstErr.name === 'TimeoutError' || firstErr.name === 'AbortError' ||
+            firstErr.message.includes('Failed to fetch') || firstErr.message.includes('NetworkError')) {
+          setP('伺服器喚醒中，自動重試...', 50);
+          // 短暫等待 2 秒讓 Cloud Run 回穩
+          await new Promise(r => setTimeout(r, 2000));
+          setP('重試中，請稍候...', 55);
+          // 第二次給完整 5 分鐘
+          resp = await callScheduleAPI(uploadedFile, TOTAL_TIMEOUT_MS);
+        } else {
+          throw firstErr; // 其他錯誤直接拋出
+        }
+      }
 
       setP('接收結果...', 85);
 
@@ -151,6 +189,7 @@ function setP(m, p) {
 
 /* ── 初始化 ───────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
+  warmupBackend(); // 頁面載入即靜默喚醒後端
   setupUpload();
   setupRunBtn();
 });
