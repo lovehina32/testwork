@@ -311,6 +311,13 @@ async function runAnalysis() {
     const issueKeywords = COL.issue ? topKeywords(rows, COL.issue, 8) : [];
     const resultKeywords = COL.result ? topKeywords(rows, COL.result, 8) : [];
 
+    updateProgress('產生月報...', 95);
+    await delay(80);
+
+    // ── Step 7: Monthly Report Data ──
+    const monthlyMajor = majorStats.length ? majorStats : midStats;
+    const monthlyTotal = monthlyMajor.reduce((s, x) => s + x.count, 0);
+
     updateProgress('完成！', 100);
     await delay(200);
 
@@ -323,6 +330,18 @@ async function runAnalysis() {
       suggestions,
       issueKeywords,
       resultKeywords,
+      monthlyReport: {
+        total: monthlyTotal,
+        categories: monthlyMajor,
+        midCategories: midStats,
+        dateRange,
+        rawSample: rows.slice(0, 300).map(r => ({
+          major: COL.majorCat ? r[COL.majorCat] : '',
+          mid:   COL.midCat   ? r[COL.midCat]   : '',
+          issue: COL.issue    ? r[COL.issue]     : '',
+          store: COL.store    ? r[COL.store]     : '',
+        }))
+      },
     };
 
     renderResults(result, checks);
@@ -366,6 +385,7 @@ function renderResults(d, checks) {
     if (checks[4]) renderWarnings(d.warnings);
     if (checks[5]) renderSuggestions(d.suggestions);
     if (checks[2] || checks[3]) renderStats(d.categoryStats, d.qualityStats, checks);
+    renderMonthlyReport(d.monthlyReport);
     renderQuickAsks();
     switchTab('summary');
     resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -500,4 +520,126 @@ function copyQ(q) {
   navigator.clipboard.writeText(q).then(() => {
     alert('已複製問題，可貼上至 Claude.ai 等 AI 工具繼續深入分析。');
   }).catch(() => { prompt('複製以下問題：', q); });
+}
+
+// ── Monthly Report ────────────────────────────────────────
+async function renderMonthlyReport(mr) {
+  const el = document.getElementById('tab-monthly');
+  if (!el) return;
+  if (!mr || !mr.categories?.length) {
+    el.innerHTML = '<div class="r-card"><p style="font-size:0.93em;color:var(--ink-3)">無法產生月報，請確認資料包含大類別欄位。</p></div>';
+    return;
+  }
+
+  const total = mr.total || 1;
+
+  // 表格 HTML
+  const tableRows = mr.categories.map(c => {
+    const pct = (c.count / total * 100).toFixed(0) + '%';
+    return `<tr>
+      <td style="text-align:left;padding:6px 10px">${c.name}</td>
+      <td style="font-family:var(--font-mono);text-align:center">${c.count}</td>
+      <td style="font-family:var(--font-mono);text-align:center;color:${c.pct >= 20 ? '#c53030' : 'inherit'};font-weight:${c.pct >= 20 ? '600' : '400'}">${c.pct.toFixed(0)}%</td>
+      <td style="text-align:center;color:var(--ink-3);font-size:0.8em">—</td>
+    </tr>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="r-card">
+      <h3 style="margin-bottom:1rem">客服案件分析 <span style="font-size:0.8em;color:var(--ink-3);font-weight:400">— ${mr.dateRange}</span></h3>
+      <table class="data-table" style="margin-bottom:1.5rem">
+        <thead><tr>
+          <th style="text-align:left">大類別</th>
+          <th style="text-align:center">案件數</th>
+          <th style="text-align:center">佔比</th>
+          <th style="text-align:center">前月比</th>
+        </tr></thead>
+        <tbody>
+          ${tableRows}
+          <tr style="font-weight:600;border-top:2px solid var(--line)">
+            <td style="text-align:left;padding:6px 10px">總計</td>
+            <td style="font-family:var(--font-mono);text-align:center">${total.toLocaleString()}</td>
+            <td style="font-family:var(--font-mono);text-align:center">100%</td>
+            <td style="text-align:center">—</td>
+          </tr>
+        </tbody>
+      </table>
+      <p style="font-size:0.75em;color:var(--ink-3);margin-bottom:1.5rem">※筆數統計以立案件數計算</p>
+      <div id="monthly-highlights">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:1rem">
+          <span style="font-size:0.87em;font-weight:600">重點說明</span>
+          <span class="badge badge-info">AI 產生中...</span>
+        </div>
+        <div id="monthly-highlights-content" style="font-size:0.87em;color:var(--ink-3)">正在分析資料，請稍候...</div>
+      </div>
+    </div>`;
+
+  // 呼叫 Claude API 產生重點說明
+  await generateMonthlyHighlights(mr);
+}
+
+async function generateMonthlyHighlights(mr) {
+  const el = document.getElementById('monthly-highlights-content');
+  const badgeEl = document.querySelector('#monthly-highlights .badge');
+  if (!el) return;
+
+  // 準備給 AI 的資料摘要
+  const catSummary = mr.categories.map(c => `${c.name}：${c.count}件（${c.pct.toFixed(0)}%）`).join('、');
+  const midSummary = mr.midCategories?.slice(0, 10).map(c => `${c.name}：${c.count}件`).join('、') || '';
+  const sampleIssues = mr.rawSample
+    ?.filter(r => r.issue)
+    .slice(0, 50)
+    .map(r => r.issue)
+    .join('\n') || '';
+
+  const prompt = `你是一位客服數據分析師。以下是本月客服案件統計資料，請產生「重點說明」，格式仿照以下範例：
+
+範例格式：
+1、「商品訂購」問題前月比292%：
+①說明原因A（X筆）
+②說明原因B（X筆）
+
+2、「一般商品」問題佔比28%：
+①說明原因A（X筆）
+②說明原因B（X筆）
+
+---
+本月資料：
+大類別分布：${catSummary}
+中類別分布：${midSummary}
+部分反應事項範例：
+${sampleIssues}
+---
+
+請根據以上資料，找出佔比最高或最值得關注的2~3個大類別，每個類別列出1~2個具體說明。
+說明需根據中類別或反應事項內容推斷，不要捏造數字。
+若無前月比資料，前月比欄位請省略不寫。
+直接輸出重點說明內容，不需要標題，不需要任何前言。`;
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await resp.json();
+    const text = data.content?.find(b => b.type === 'text')?.text || '無法產生說明。';
+
+    // 轉換換行為 HTML
+    const html = text
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/\n\n/g, '</p><p style="margin-top:0.75rem">')
+      .replace(/\n/g, '<br>');
+
+    el.innerHTML = `<div style="line-height:1.8;color:var(--ink)"><p>${html}</p></div>`;
+    if (badgeEl) { badgeEl.textContent = 'AI 已產生'; badgeEl.className = 'badge badge-info'; }
+
+  } catch (e) {
+    el.innerHTML = '<span style="color:var(--ink-3)">AI 說明產生失敗，請確認網路連線。</span>';
+    if (badgeEl) { badgeEl.textContent = '產生失敗'; badgeEl.className = 'badge badge-danger'; }
+  }
 }
