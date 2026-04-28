@@ -4,7 +4,7 @@
 ══════════════════════════════════════════════════════ */
 
 // ── GCP API 端點 ─────────────────────────────────────────
-const API_URL = 'https://rz-scheduler-587734217935.asia-east1.run.app/api/schedule';
+const API_URL = 'https://rz-scheduler-v2-587734217935.asia-east1.run.app/api/schedule';
 
 /* ── DOM 安全取得 ──────────────────────────────────────── */
 const $ = id => document.getElementById(id);
