@@ -37,9 +37,9 @@
     </div>
 
     <section class="tool-hero">
-      <div class="tool-hero-tag">LP 最佳化排班</div>
+      <div class="tool-hero-tag">智慧排班系統</div>
       <h1 class="tool-hero-title">客服排班<br><em>智慧排班系統</em></h1>
-      <p class="tool-hero-sub">上傳預定勤務班表，系統以線性規劃自動最佳化，確保每人週休2天、連上不超過6天、班位均衡遞補</p>
+      <p class="tool-hero-sub">上傳預定勤務班表，系統自動最佳化，確保每人週休至少2天、連上不超過5天、班位順序排列</p>
     </section>
 
     <div class="app-card">
@@ -69,7 +69,7 @@
       <div class="info-box" id="infoBox" style="display:none">
         <div class="ib-icon">⚡</div>
         <div class="ib-text">
-          <strong>LP 最佳化求解中...</strong><br>
+          <strong>最佳化求解中...</strong><br>
           <span id="infoMsg">正在計算最佳排班方案，通常需要 30~120 秒</span>
         </div>
       </div>
@@ -96,10 +96,10 @@
     </div>
 
     <div class="rules-card">
-      <div class="rules-title">LP 排班規則</div>
+      <div class="rules-title">排班規則</div>
       <div class="rules-grid">
         <div class="rule-item"><div class="rule-label">班位清單（11名額）</div>
-          <div class="rule-val">07~16 / 07:30~16:30 / 08~17×3 / 09~18×2 / 10~19 / 11~20 / 13~22 / 14~23</div></div>
+          <div class="rule-val">07~16 / 07:30~16:30 / 08~17×3 / 09~18×2 / 10~19 / 11~20 / 10~20 / 14~23</div></div>
         <div class="rule-item"><div class="rule-label">週一（9人）</div>
           <div class="rule-val">移除 08~17×1、10~19</div></div>
         <div class="rule-item"><div class="rule-label">週二至五（8人）</div>
@@ -113,9 +113,11 @@
         <div class="rule-item"><div class="rule-label">週休規定</div>
           <div class="rule-val">每人每週 ≥ 2 天休假</div></div>
         <div class="rule-item"><div class="rule-label">連班規定</div>
-          <div class="rule-val">連續上班 ≤ 6 天</div></div>
+          <div class="rule-val">連續上班 ≤ 5 天</div></div>
+        <div class="rule-item"><div class="rule-label">班位排序</div>
+          <div class="rule-val">每天班位由上到下依開始時間排序，相鄰工作日班位時間差距 ≤ 2 小時</div></div>
         <div class="rule-item"><div class="rule-label">均衡排班</div>
-          <div class="rule-val">各人上班天數差距 ≤ 8 天（LP 最佳化）</div></div>
+          <div class="rule-val">各人上班天數差距 ≤ 8 天</div></div>
       </div>
     </div>
 
