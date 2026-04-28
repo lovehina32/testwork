@@ -53,7 +53,25 @@ function handleFile(file) {
     } else {
       const wb = XLSX.read(e.target.result, { type: 'binary' });
       const ws = wb.Sheets[wb.SheetNames[0]];
-      uploadedData = XLSX.utils.sheet_to_csv(ws);
+      // 轉成二維陣列，自動偵測真正的標題列
+      const allRows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      // 已知欄位關鍵字（找包含最多這些字的列當標題）
+      const KEY_COLS = ['日期','時間','店號','店名','大類別','中類別','小類別','處理狀態','反應事項','處理結果','一次性處理'];
+      let headerRowIdx = 0;
+      let maxMatch = 0;
+      allRows.slice(0, 30).forEach((row, idx) => {
+        const rowStr = row.join(',');
+        const matches = KEY_COLS.filter(k => rowStr.includes(k)).length;
+        if (matches > maxMatch) { maxMatch = matches; headerRowIdx = idx; }
+      });
+      // 從標題列開始轉成 CSV
+      const dataRows = allRows.slice(headerRowIdx);
+      uploadedData = dataRows.map(row =>
+        row.map(cell => {
+          const s = String(cell).replace(/\n/g, ' ').replace(/"/g, '""');
+          return s.includes(',') || s.includes('"') ? `"${s}"` : s;
+        }).join(',')
+      ).join('\n');
     }
   };
   reader.onerror = () => showError('檔案讀取失敗，請重試。');
@@ -174,7 +192,7 @@ async function runAnalysis() {
     const COL = {
       date:       findCol(headers, ['日期','建立時間','時間','Date','date']),
       store:      findCol(headers, ['店名','店號','門市','Store']),
-      route:      findCol(headers, ['路線','Route']),
+      route:      findCol(headers, ['路線','Route','配別']),
       warehouse:  findCol(headers, ['倉別','倉庫','Warehouse']),
       majorCat:   findCol(headers, ['大類別','大類','Major']),
       midCat:     findCol(headers, ['中類別','中類','Mid']),
