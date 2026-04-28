@@ -601,63 +601,58 @@ async function generateMonthlyHighlights(mr) {
   const badgeEl = document.querySelector('#monthly-highlights .badge');
   if (!el) return;
 
-  // 準備給 AI 的資料摘要
-  const catSummary = mr.categories.map(c => `${c.name}：${c.count}件（${c.pct.toFixed(0)}%）`).join('、');
-  const midSummary = mr.midCategories?.slice(0, 10).map(c => `${c.name}：${c.count}件`).join('、') || '';
-  const sampleIssues = mr.rawSample
-    ?.filter(r => r.issue)
-    .slice(0, 50)
-    .map(r => r.issue)
-    .join('\n') || '';
-
-  const prompt = `你是一位客服數據分析師。以下是本月客服案件統計資料，請產生「重點說明」，格式仿照以下範例：
-
-範例格式：
-1、「商品訂購」問題前月比292%：
-①說明原因A（X筆）
-②說明原因B（X筆）
-
-2、「一般商品」問題佔比28%：
-①說明原因A（X筆）
-②說明原因B（X筆）
-
----
-本月資料：
-大類別分布：${catSummary}
-中類別分布：${midSummary}
-部分反應事項範例：
-${sampleIssues}
----
-
-請根據以上資料，找出佔比最高或最值得關注的2~3個大類別，每個類別列出1~2個具體說明。
-說明需根據中類別或反應事項內容推斷，不要捏造數字。
-若無前月比資料，前月比欄位請省略不寫。
-直接輸出重點說明內容，不需要標題，不需要任何前言。`;
-
   try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        messages: [{ role: 'user', content: prompt }]
-      })
+    const total = mr.total || 1;
+    // 取前3大類別
+    const top = mr.categories.slice(0, 3);
+    const highlights = [];
+
+    top.forEach((cat, idx) => {
+      // 找此大類別下的中類別分布
+      const midInCat = mr.rawSample
+        ? (() => {
+            const map = {};
+            mr.rawSample.forEach(r => {
+              if (r.major === cat.name && r.mid) {
+                map[r.mid] = (map[r.mid] || 0) + 1;
+              }
+            });
+            return Object.entries(map)
+              .sort((a, b) => b[1] - a[1])
+              .slice(0, 3)
+              .map(([name, count]) => ({ name, count }));
+          })()
+        : (mr.midCategories || []).slice(0, 3);
+
+      const pctStr = cat.pct.toFixed(0) + '%';
+      let text = `${idx + 1}、「${cat.name}」問題佔比${pctStr}（${cat.count}件）：\n`;
+
+      if (midInCat.length) {
+        midInCat.forEach((mid, mi) => {
+          const circle = ['①','②','③'][mi] || `(${mi+1})`;
+          text += `${circle}${mid.name}（${mid.count}筆）\n`;
+        });
+      } else {
+        text += `①共${cat.count}筆，佔本月案件${pctStr}\n`;
+      }
+
+      highlights.push(text.trim());
     });
-    const data = await resp.json();
-    const text = data.content?.find(b => b.type === 'text')?.text || '無法產生說明。';
 
-    // 轉換換行為 HTML
-    const html = text
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      .replace(/\n\n/g, '</p><p style="margin-top:0.75rem">')
-      .replace(/\n/g, '<br>');
+    const html = highlights
+      .map(h => {
+        const lines = h.split('\n');
+        const title = `<div style="font-weight:600;margin-bottom:4px">${lines[0]}</div>`;
+        const body = lines.slice(1).map(l => `<div style="padding-left:1em;color:var(--ink-2)">${l}</div>`).join('');
+        return `<div style="margin-bottom:1rem">${title}${body}</div>`;
+      })
+      .join('');
 
-    el.innerHTML = `<div style="line-height:1.8;color:var(--ink)"><p>${html}</p></div>`;
-    if (badgeEl) { badgeEl.textContent = 'AI 已產生'; badgeEl.className = 'badge badge-info'; }
+    el.innerHTML = `<div style="line-height:1.9">${html}</div>`;
+    if (badgeEl) { badgeEl.textContent = '自動產生'; badgeEl.className = 'badge badge-info'; }
 
   } catch (e) {
-    el.innerHTML = '<span style="color:var(--ink-3)">AI 說明產生失敗，請確認網路連線。</span>';
+    el.innerHTML = '<span style="color:var(--ink-3)">說明產生失敗。</span>';
     if (badgeEl) { badgeEl.textContent = '產生失敗'; badgeEl.className = 'badge badge-danger'; }
   }
 }
