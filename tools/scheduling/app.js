@@ -53,7 +53,7 @@ function handleFile(f) {
   hideErr();
   if ($('runBtn')) {
     $('runBtn').disabled = false;
-    $('runBtn').textContent = '開始 LP 最佳化排班';
+    $('runBtn').textContent = '開始最佳化排班';
   }
 }
 
