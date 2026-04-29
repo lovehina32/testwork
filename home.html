@@ -63,7 +63,7 @@
               <div class="tc-icon">📝</div>
               <div class="tc-badge tc-badge-amber">日報自動化</div>
             </div>
-            <h2 class="tc-title">來電日報<br>產生器</h2>
+            <h2 class="tc-title">每日報表<br>彙整</h2>
             <p class="tc-desc">上傳每日轉出報表，自動篩選 17 點前資料並依規則排序，輸出標準一般業務／EC 業務日報 Excel。</p>
             <div class="tc-features">
               <div class="tc-feat"><span class="feat-dot"></span>一般業務：大類別→中類別→店號排序</div>
@@ -85,7 +85,7 @@
               <div class="tc-icon">📊</div>
               <div class="tc-badge">純前端分析</div>
             </div>
-            <h2 class="tc-title">物流營運<br>數據分析助手</h2>
+            <h2 class="tc-title">報表分析</h2>
             <p class="tc-desc">上傳 CSV 或 Excel 報表，自動萃取核心問題、異常預警與改善建議。</p>
             <div class="tc-features">
               <div class="tc-feat"><span class="feat-dot"></span>數據總結與規模概覽</div>
@@ -199,7 +199,7 @@
         <div class="footer-links">
           <a href="tools/logistics-analyzer/index.html">物流分析工具</a>
           <a href="tools/claims-processor/index.html">壓賠整合工具</a>
-          <a href="tools/daily-report/index.html">來電日報產生器</a>
+          <a href="tools/daily-report/index.html">每日報表彙整</a>
         </div>
       </div>
       <div class="footer-bottom">
@@ -268,9 +268,9 @@
       document.getElementById('nav-home').classList.remove('nav-active');
       if (tab === 'frontline') {
         document.getElementById('nav-frontline').classList.add('tab-active');
-        heroTitle.innerHTML = '一線客服<br><em>工具</em>';
+        heroTitle.innerHTML = '一線客服<br><em>小助手</em>';
         heroDesc.textContent = '物流數據分析，協助一線客服人員快速掌握異常狀況與處理建議。';
-        sectionLabel.textContent = '一線客服人員工具';
+        sectionLabel.textContent = '一線客服小助手工具';
         heroBtn.textContent = '立即使用 →';
       } else if (tab === 'vendor') {
         document.getElementById('nav-vendor').classList.add('tab-active');
