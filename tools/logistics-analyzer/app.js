@@ -603,7 +603,7 @@ async function generateMonthlyHighlights(mr) {
   if (!el) return;
 
   const GEMINI_KEY = 'AIzaSyD-aV1IM6oYmaA23vMkUZAgftb96JTIWV8';
-  const GEMINI_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${GEMINI_KEY}`;
+  const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${GEMINI_KEY}`;
 
   try {
     const total = mr.total || 1;
@@ -699,6 +699,10 @@ ${detailText}
     });
 
     const data = await resp.json();
+    if (!resp.ok) {
+      console.error('Gemini Error:', JSON.stringify(data));
+      throw new Error(`HTTP ${resp.status}: ${JSON.stringify(data)}`);
+    }
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
     if (!text) throw new Error('無回應');
