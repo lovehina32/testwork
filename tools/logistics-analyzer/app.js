@@ -603,7 +603,7 @@ async function generateMonthlyHighlights(mr) {
   if (!el) return;
 
   const GEMINI_KEY = 'AIzaSyD-aV1IM6oYmaA23vMkUZAgftb96JTIWV8';
-  const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
+  const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`;
 
   try {
     const total = mr.total || 1;
