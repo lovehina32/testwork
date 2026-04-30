@@ -353,9 +353,10 @@ async function runAnalysis() {
         categories: monthlyMajor,
         midCategories: midStats,
         dateRange,
-        rawSample: rows.slice(0, 300).map(r => ({
+        rawSample: rows.slice(0, 500).map(r => ({
           major: COL.majorCat ? r[COL.majorCat] : '',
           mid:   COL.midCat   ? r[COL.midCat]   : '',
+          minor: COL.minorCat ? r[COL.minorCat] : '',
           issue: COL.issue    ? r[COL.issue]     : '',
           store: COL.store    ? r[COL.store]     : '',
         }))
@@ -609,33 +610,51 @@ async function generateMonthlyHighlights(mr) {
     const catSummary = mr.categories.map(c => `${c.name}：${c.count}件（${c.pct.toFixed(0)}%）`).join('、');
     const midSummary = mr.midCategories?.slice(0, 10).map(c => `${c.name}：${c.count}件`).join('、') || '';
 
-    // 建立大類別→中類別→反應事項的三層統計
+    // 建立大類別→小類別→反應事項的三層統計
     const catDetail = {};
     mr.rawSample?.forEach(r => {
       if (!r.major) return;
       if (!catDetail[r.major]) catDetail[r.major] = {};
-      const mid = r.mid || '（未分類）';
-      if (!catDetail[r.major][mid]) catDetail[r.major][mid] = {};
-      if (r.issue) {
-        const iss = String(r.issue).trim().slice(0, 30);
-        catDetail[r.major][mid][iss] = (catDetail[r.major][mid][iss] || 0) + 1;
-      }
+      const minor = r.minor || r.mid || '（未分類）';
+      if (!catDetail[r.major][minor]) catDetail[r.major][minor] = [];
+      if (r.issue) catDetail[r.major][minor].push(String(r.issue).trim());
     });
+
+    // 從反應事項清單中提取最常出現的關鍵詞（斷詞取2~5字片段）
+    function topPhrases(issues, topN=2) {
+      const freq = {};
+      issues.forEach(iss => {
+        const cleaned = iss.replace(/[，。！？、\s]/g,'').slice(0,50);
+        for (let len=4; len<=8; len++) {
+          for (let i=0; i<=cleaned.length-len; i++) {
+            const phrase = cleaned.slice(i, i+len);
+            if (phrase.length >= 4) freq[phrase] = (freq[phrase]||0)+1;
+          }
+        }
+      });
+      return Object.entries(freq)
+        .filter(([k,v])=>v>=2)
+        .sort((a,b)=>b[1]-a[1])
+        .slice(0,topN)
+        .map(([k,v])=>`「${k}」(${v}筆)`);
+    }
 
     // 格式化為 prompt 用的文字
     const detailText = mr.categories.slice(0, 3).map(cat => {
-      const mids = catDetail[cat.name] || {};
-      const midList = Object.entries(mids)
-        .map(([midName, issues]) => {
-          const total = Object.values(issues).reduce((s,v)=>s+v, 0);
-          const topIssues = Object.entries(issues)
-            .sort((a,b)=>b[1]-a[1]).slice(0,2)
-            .map(([iss,cnt])=>`「${iss}」${cnt}筆`).join('、');
-          return `  - ${midName}（${total}筆）：${topIssues}`;
-        })
-        .sort((a,b)=>parseInt(b.match(/（(\d+)筆）/)?.[1]||0)-parseInt(a.match(/（(\d+)筆）/)?.[1]||0))
-        .slice(0,3).join('\n');
-      return `【${cat.name}】${cat.count}件（${cat.pct.toFixed(0)}%）\n${midList}`;
+      const minors = catDetail[cat.name] || {};
+      const minorList = Object.entries(minors)
+        .map(([minorName, issues]) => ({
+          name: minorName,
+          count: issues.length,
+          phrases: topPhrases(issues, 2)
+        }))
+        .sort((a,b)=>b.count-a.count)
+        .slice(0,3)
+        .map(m => {
+          const phraseStr = m.phrases.length ? `，常見：${m.phrases.join('、')}` : '';
+          return `  - ${m.name}（${m.count}筆${phraseStr}）`;
+        }).join('\n');
+      return `【${cat.name}】${cat.count}件（${cat.pct.toFixed(0)}%）\n${minorList}`;
     }).join('\n\n');
 
     const sampleIssues = mr.rawSample
@@ -693,11 +712,16 @@ ${detailText}
       const highlights = [];
       top.forEach((cat, idx) => {
         const map = {};
-        mr.rawSample?.forEach(r => { if (r.major === cat.name && r.mid) map[r.mid] = (map[r.mid]||0)+1; });
-        const midInCat = Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([name,count])=>({name,count}));
+        mr.rawSample?.forEach(r => {
+          if (r.major === cat.name) {
+            const key = r.minor || r.mid || '（未分類）';
+            map[key] = (map[key]||0)+1;
+          }
+        });
+        const minorInCat = Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([name,count])=>({name,count}));
         const pctStr = cat.pct.toFixed(0) + '%';
         let text = `${idx+1}、「${cat.name}」問題佔比${pctStr}（${cat.count}件）：\n`;
-        if (midInCat.length) midInCat.forEach((mid,mi)=>{ text += `${'①②③'[mi]||`(${mi+1})`}${mid.name}（${mid.count}筆）\n`; });
+        if (minorInCat.length) minorInCat.forEach((m,mi)=>{ text += `${'①②③'[mi]||`(${mi+1})`}${m.name}（${m.count}筆）\n`; });
         else text += `①共${cat.count}筆，佔本月案件${pctStr}\n`;
         highlights.push(text.trim());
       });
