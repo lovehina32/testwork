@@ -40,15 +40,46 @@ const AUTH = (function () {
     localStorage.setItem(USERS_KEY, JSON.stringify(users));
   }
 
-  // ── 登入驗證 ──────────────────────────────────────────────
-  function login(username, password) {
-    const users = getUsers();
-    const user  = users.find(u => u.username === username && u.password === password);
-    if (!user)         return { ok: false, reason: '帳號或密碼錯誤' };
-    if (!user.enabled) return { ok: false, reason: '此帳號已停用，請聯絡管理員' };
-    const session = { username: user.username, role: user.role, displayName: user.displayName, ts: Date.now() };
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
-    return { ok: true, session };
+  // ── 後端 API 端點 ─────────────────────────────────────────
+  const API_BASE = 'https://rz-scheduler-v2-587734217935.asia-east1.run.app';
+
+  // ── 登入驗證（打後端日翊帳號驗證）────────────────────────
+  async function login(username, password) {
+    try {
+      const resp = await fetch(`${API_BASE}/api/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ USER_ID: username, PSW: password })
+      });
+      const data = await resp.json();
+
+      if (resp.status === 403) return { ok: false, reason: '此帳號無使用權限' };
+      if (resp.status === 400) return { ok: false, reason: '請輸入帳號與密碼' };
+
+      const code = String(data.MSG || '').split(' ')[0];
+      const errorMessages = {
+        '100': '帳號或密碼錯誤',
+        '200': 'AD 認證錯誤，請確認密碼是否正確',
+        '998': '系統暫時無法使用，請稍後再試',
+        '999': '系統發生錯誤，請聯絡管理員'
+      };
+
+      if (code !== '000') {
+        return { ok: false, reason: errorMessages[code] || '系統發生錯誤，請聯絡管理員' };
+      }
+
+      const session = {
+        username: username,
+        role: username === 'admin' ? 'admin' : 'user',
+        displayName: username,
+        ts: Date.now()
+      };
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+      return { ok: true, session };
+
+    } catch (e) {
+      return { ok: false, reason: '無法連線至伺服器，請確認網路狀態' };
+    }
   }
 
   // ── 取得目前 Session ──────────────────────────────────────

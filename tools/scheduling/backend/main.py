@@ -83,6 +83,41 @@ def schedule():
         return jsonify({'error': f'排班求解失敗：{str(e)}'}), 500
 
 
+# ── 日翊帳號驗證：兩層驗證架構 ──────────────────────────
+# 白名單：允許使用 OpsHub 的日翊帳號（空白表示全開放）
+ALLOWED_USERS = os.environ.get('ALLOWED_USERS', '').split(',')
+
+@app.route('/api/login', methods=['POST'])
+def login():
+    body = request.get_json(force=True) or {}
+    user_id  = str(body.get('USER_ID', '')).strip()[:15]
+    password = str(body.get('PSW', ''))[:30]
+
+    if not user_id or not password:
+        return jsonify({'MSG': '400 缺少帳號或密碼'}), 400
+
+    # 第一層：白名單檢查（ALLOWED_USERS 為空則全部放行）
+    if ALLOWED_USERS and ALLOWED_USERS[0] and user_id not in ALLOWED_USERS:
+        return jsonify({'MSG': '403 此帳號無使用權限'}), 403
+
+    # 第二層：日翊 CheckUserId 驗證
+    try:
+        fme_req = urllib.request.Request(
+            'https://eip.fme.com.tw/FMEIP/AasApi/CheckUserId',
+            data=json.dumps({'USER_ID': user_id, 'PSW': password}).encode('utf-8'),
+            headers={'Content-Type': 'application/json'},
+            method='POST'
+        )
+        with urllib.request.urlopen(fme_req, timeout=10) as res:
+            result = json.loads(res.read().decode('utf-8'))
+        return jsonify(result)
+    except urllib.error.HTTPError as e:
+        err_body = json.loads(e.read().decode('utf-8'))
+        return jsonify(err_body), e.code
+    except Exception as e:
+        return jsonify({'MSG': f'999 {str(e)}'}), 500
+
+
 # ── Gemini 代理：保護 API Key 不外露 ────────────────────
 @app.route('/api/gemini', methods=['POST'])
 def gemini_proxy():
