@@ -601,58 +601,86 @@ async function generateMonthlyHighlights(mr) {
   const badgeEl = document.querySelector('#monthly-highlights .badge');
   if (!el) return;
 
+  const GEMINI_KEY = 'AIzaSyD-aV1IM6oYmaA23vMkUZAgftb96JTIWV8';
+  const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
+
   try {
     const total = mr.total || 1;
-    // 取前3大類別
-    const top = mr.categories.slice(0, 3);
-    const highlights = [];
+    const catSummary = mr.categories.map(c => `${c.name}：${c.count}件（${c.pct.toFixed(0)}%）`).join('、');
+    const midSummary = mr.midCategories?.slice(0, 10).map(c => `${c.name}：${c.count}件`).join('、') || '';
+    const sampleIssues = mr.rawSample
+      ?.filter(r => r.issue)
+      .slice(0, 50)
+      .map(r => r.issue)
+      .join('\n') || '';
 
-    top.forEach((cat, idx) => {
-      // 找此大類別下的中類別分布
-      const midInCat = mr.rawSample
-        ? (() => {
-            const map = {};
-            mr.rawSample.forEach(r => {
-              if (r.major === cat.name && r.mid) {
-                map[r.mid] = (map[r.mid] || 0) + 1;
-              }
-            });
-            return Object.entries(map)
-              .sort((a, b) => b[1] - a[1])
-              .slice(0, 3)
-              .map(([name, count]) => ({ name, count }));
-          })()
-        : (mr.midCategories || []).slice(0, 3);
+    const prompt = `你是一位客服數據分析師。以下是本月客服案件統計資料，請產生「重點說明」。
 
-      const pctStr = cat.pct.toFixed(0) + '%';
-      let text = `${idx + 1}、「${cat.name}」問題佔比${pctStr}（${cat.count}件）：\n`;
+格式範例：
+1、「商品訂購」問題佔比21%（391件）：
+①訂購蠟筆小新商品，因缺貨導致大量詢問（78筆）
+②訂購上架新品，客服協助說明庫存狀況（60筆）
 
-      if (midInCat.length) {
-        midInCat.forEach((mid, mi) => {
-          const circle = ['①','②','③'][mi] || `(${mi+1})`;
-          text += `${circle}${mid.name}（${mid.count}筆）\n`;
-        });
-      } else {
-        text += `①共${cat.count}筆，佔本月案件${pctStr}\n`;
-      }
+2、「一般商品」問題佔比28%（519件）：
+①反應檔期結束退貨問題（37筆）
+②商品破損、瑕疵申請退換（22筆）
 
-      highlights.push(text.trim());
+---
+本月資料：
+大類別分布：${catSummary}
+中類別分布：${midSummary}
+部分反應事項範例：
+${sampleIssues}
+---
+
+請根據以上資料，找出佔比最高或最值得關注的2~3個大類別，每個類別列出1~2個具體說明。說明需根據中類別或反應事項內容推斷，數字請用括號標示筆數。若無前月比資料請省略。直接輸出內容，不需標題或前言。`;
+
+    const resp = await fetch(GEMINI_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.3, maxOutputTokens: 800 }
+      })
     });
 
-    const html = highlights
-      .map(h => {
-        const lines = h.split('\n');
-        const title = `<div style="font-weight:600;margin-bottom:4px">${lines[0]}</div>`;
-        const body = lines.slice(1).map(l => `<div style="padding-left:1em;color:var(--ink-2)">${l}</div>`).join('');
-        return `<div style="margin-bottom:1rem">${title}${body}</div>`;
-      })
-      .join('');
+    const data = await resp.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
-    el.innerHTML = `<div style="line-height:1.9">${html}</div>`;
-    if (badgeEl) { badgeEl.textContent = '自動產生'; badgeEl.className = 'badge badge-info'; }
+    if (!text) throw new Error('無回應');
+
+    const html = text
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/\n\n/g, '</p><p style="margin-top:0.75rem">')
+      .replace(/\n/g, '<br>');
+
+    el.innerHTML = `<div style="line-height:1.9;color:var(--ink)"><p>${html}</p></div>`;
+    if (badgeEl) { badgeEl.textContent = 'AI 已產生'; badgeEl.className = 'badge badge-info'; }
 
   } catch (e) {
-    el.innerHTML = '<span style="color:var(--ink-3)">說明產生失敗。</span>';
-    if (badgeEl) { badgeEl.textContent = '產生失敗'; badgeEl.className = 'badge badge-danger'; }
+    // Gemini 失敗時退回純前端邏輯
+    try {
+      const top = mr.categories.slice(0, 3);
+      const highlights = [];
+      top.forEach((cat, idx) => {
+        const map = {};
+        mr.rawSample?.forEach(r => { if (r.major === cat.name && r.mid) map[r.mid] = (map[r.mid]||0)+1; });
+        const midInCat = Object.entries(map).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([name,count])=>({name,count}));
+        const pctStr = cat.pct.toFixed(0) + '%';
+        let text = `${idx+1}、「${cat.name}」問題佔比${pctStr}（${cat.count}件）：\n`;
+        if (midInCat.length) midInCat.forEach((mid,mi)=>{ text += `${'①②③'[mi]||`(${mi+1})`}${mid.name}（${mid.count}筆）\n`; });
+        else text += `①共${cat.count}筆，佔本月案件${pctStr}\n`;
+        highlights.push(text.trim());
+      });
+      const html = highlights.map(h=>{
+        const lines=h.split('\n');
+        return `<div style="margin-bottom:1rem"><div style="font-weight:600;margin-bottom:4px">${lines[0]}</div>${lines.slice(1).map(l=>`<div style="padding-left:1em;color:var(--ink-2)">${l}</div>`).join('')}</div>`;
+      }).join('');
+      el.innerHTML = `<div style="line-height:1.9">${html}</div>`;
+      if (badgeEl) { badgeEl.textContent = '自動產生'; badgeEl.className = 'badge badge-info'; }
+    } catch {
+      el.innerHTML = '<span style="color:var(--ink-3)">說明產生失敗。</span>';
+      if (badgeEl) { badgeEl.textContent = '產生失敗'; badgeEl.className = 'badge badge-danger'; }
+    }
   }
 }
