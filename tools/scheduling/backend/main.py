@@ -11,6 +11,7 @@ import os
 import uuid
 import tempfile
 import json
+import urllib.request
 from flask import Flask, request, jsonify, send_file, after_this_request
 from flask_cors import CORS
 from solver import run as run_solver
@@ -80,6 +81,36 @@ def schedule():
                 try: os.remove(p)
                 except: pass
         return jsonify({'error': f'排班求解失敗：{str(e)}'}), 500
+
+
+# ── Gemini 代理：保護 API Key 不外露 ────────────────────
+@app.route('/api/gemini', methods=['POST'])
+def gemini_proxy():
+    GEMINI_KEY = os.environ.get('GEMINI_API_KEY', '')
+    if not GEMINI_KEY:
+        return jsonify({'error': 'GEMINI_API_KEY 未設定'}), 500
+
+    try:
+        body = request.get_json(force=True)
+        if not body:
+            return jsonify({'error': '缺少 request body'}), 400
+
+        url = f'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_KEY}'
+        req = urllib.request.Request(
+            url,
+            data=json.dumps(body).encode('utf-8'),
+            headers={'Content-Type': 'application/json'},
+            method='POST'
+        )
+        with urllib.request.urlopen(req, timeout=30) as res:
+            result = json.loads(res.read().decode('utf-8'))
+        return jsonify(result)
+
+    except urllib.error.HTTPError as e:
+        err_body = json.loads(e.read().decode('utf-8'))
+        return jsonify(err_body), e.code
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 if __name__ == '__main__':
