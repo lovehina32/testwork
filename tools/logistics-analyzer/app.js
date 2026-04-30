@@ -608,6 +608,36 @@ async function generateMonthlyHighlights(mr) {
     const total = mr.total || 1;
     const catSummary = mr.categories.map(c => `${c.name}：${c.count}件（${c.pct.toFixed(0)}%）`).join('、');
     const midSummary = mr.midCategories?.slice(0, 10).map(c => `${c.name}：${c.count}件`).join('、') || '';
+
+    // 建立大類別→中類別→反應事項的三層統計
+    const catDetail = {};
+    mr.rawSample?.forEach(r => {
+      if (!r.major) return;
+      if (!catDetail[r.major]) catDetail[r.major] = {};
+      const mid = r.mid || '（未分類）';
+      if (!catDetail[r.major][mid]) catDetail[r.major][mid] = {};
+      if (r.issue) {
+        const iss = String(r.issue).trim().slice(0, 30);
+        catDetail[r.major][mid][iss] = (catDetail[r.major][mid][iss] || 0) + 1;
+      }
+    });
+
+    // 格式化為 prompt 用的文字
+    const detailText = mr.categories.slice(0, 3).map(cat => {
+      const mids = catDetail[cat.name] || {};
+      const midList = Object.entries(mids)
+        .map(([midName, issues]) => {
+          const total = Object.values(issues).reduce((s,v)=>s+v, 0);
+          const topIssues = Object.entries(issues)
+            .sort((a,b)=>b[1]-a[1]).slice(0,2)
+            .map(([iss,cnt])=>`「${iss}」${cnt}筆`).join('、');
+          return `  - ${midName}（${total}筆）：${topIssues}`;
+        })
+        .sort((a,b)=>parseInt(b.match(/（(\d+)筆）/)?.[1]||0)-parseInt(a.match(/（(\d+)筆）/)?.[1]||0))
+        .slice(0,3).join('\n');
+      return `【${cat.name}】${cat.count}件（${cat.pct.toFixed(0)}%）\n${midList}`;
+    }).join('\n\n');
+
     const sampleIssues = mr.rawSample
       ?.filter(r => r.issue)
       .slice(0, 50)
@@ -618,22 +648,21 @@ async function generateMonthlyHighlights(mr) {
 
 格式範例：
 1、「商品訂購」問題佔比21%（391件）：
-①訂購蠟筆小新商品，因缺貨導致大量詢問（78筆）
-②訂購上架新品，客服協助說明庫存狀況（60筆）
+①(商品)缺貨（78筆）：主要反應「蠟筆小新掛件無庫存」、「航海王新品詢問」
+②(商品)訂購協助（60筆）：客服協助說明訂購流程
 
 2、「一般商品」問題佔比28%（519件）：
-①反應檔期結束退貨問題（37筆）
-②商品破損、瑕疵申請退換（22筆）
+①(商品)退貨（37筆）：反應檔期結束退貨、數量退錯
+②(商品)破損瑕疵（22筆）：後送商品包裝破損申請退換
 
 ---
-本月資料：
-大類別分布：${catSummary}
-中類別分布：${midSummary}
-部分反應事項範例：
-${sampleIssues}
+本月詳細資料（大類別→中類別→主要反應事項）：
+${detailText}
+
+大類別總覽：${catSummary}
 ---
 
-請根據以上資料，找出佔比最高或最值得關注的2~3個大類別，每個類別列出1~2個具體說明。說明需根據中類別或反應事項內容推斷，數字請用括號標示筆數。若無前月比資料請省略。直接輸出內容，不需標題或前言。`;
+請根據以上資料，針對佔比最高的2~3個大類別，每個類別列出1~2個中類別，並說明主要反應內容。數字請標示筆數。直接輸出內容，不需標題或前言。`;
 
     const resp = await fetch(GEMINI_URL, {
       method: 'POST',
