@@ -603,13 +603,7 @@ async function generateMonthlyHighlights(mr) {
   if (!el) return;
 
   const GEMINI_KEY = 'AIzaSyD-aV1IM6oYmaA23vMkUZAgftb96JTIWV8';
-
-  // 先查詢可用模型清單
-  const listResp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_KEY}`);
-  const listData = await listResp.json();
-  console.log('Available models:', JSON.stringify(listData?.models?.map(m=>m.name)));
-
-  const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_KEY}`;
+  const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
 
   try {
     const total = mr.total || 1;
