@@ -639,23 +639,25 @@ async function generateMonthlyHighlights(mr) {
         .map(([k,v])=>`「${k}」(${v}筆)`);
     }
 
-    // 格式化為 prompt 用的文字
+    // 收集每個大類別下的反應事項（完整內容）
+    const issuesByMajor = {};
+    mr.rawSample?.forEach(r => {
+      if (!r.major || !r.issue) return;
+      if (!issuesByMajor[r.major]) issuesByMajor[r.major] = [];
+      issuesByMajor[r.major].push(String(r.issue).trim());
+    });
+
+    // 格式化為 prompt 用的文字（每大類別取前30筆反應事項）
     const detailText = mr.categories.slice(0, 3).map(cat => {
       const minors = catDetail[cat.name] || {};
-      const minorList = Object.entries(minors)
-        .map(([minorName, issues]) => ({
-          name: minorName,
-          count: issues.length,
-          phrases: topPhrases(issues, 2)
-        }))
-        .sort((a,b)=>b.count-a.count)
+      const minorSummary = Object.entries(minors)
+        .sort((a,b)=>b[1].length-a[1].length)
         .slice(0,3)
-        .map(m => {
-          const phraseStr = m.phrases.length ? `，常見：${m.phrases.join('、')}` : '';
-          return `  - ${m.name}（${m.count}筆${phraseStr}）`;
-        }).join('\n');
-      return `【${cat.name}】${cat.count}件（${cat.pct.toFixed(0)}%）\n${minorList}`;
-    }).join('\n\n');
+        .map(([name,issues])=>`${name}（${issues.length}筆）`)
+        .join('、');
+      const sampleIssues = (issuesByMajor[cat.name]||[]).slice(0,30).join('\n');
+      return `【${cat.name}】${cat.count}件（${cat.pct.toFixed(0)}%）\n小類別：${minorSummary}\n反應事項範例：\n${sampleIssues}`;
+    }).join('\n\n---\n\n');
 
     const sampleIssues = mr.rawSample
       ?.filter(r => r.issue)
@@ -663,25 +665,29 @@ async function generateMonthlyHighlights(mr) {
       .map(r => r.issue)
       .join('\n') || '';
 
-    const prompt = `你是一位客服數據分析師。以下是本月客服案件統計資料，請產生「重點說明」。
+    const prompt = `你是一位客服數據分析師。以下是本月客服案件的反應事項原始資料，請產生「重點說明」。
 
-格式範例：
+輸出格式（範例）：
 1、「商品訂購」問題佔比21%（391件）：
-①(商品)缺貨（78筆）：主要反應「蠟筆小新掛件無庫存」、「航海王新品詢問」
-②(商品)訂購協助（60筆）：客服協助說明訂購流程
+①缺貨詢問（約78筆）：蠟筆小新新氣象系列掛件無庫存，客服說明依歷史銷售給量
+②新品訂購說明（約25筆）：寶可夢卡牌忍者飛旋10包組上架，WEB通報說明不開放訂購
 
 2、「一般商品」問題佔比28%（519件）：
-①(商品)退貨（37筆）：反應檔期結束退貨、數量退錯
-②(商品)破損瑕疵（22筆）：後送商品包裝破損申請退換
+①檔期退貨（約37筆）：檔期結束退一番賞商品，反應漏退、數量退錯
+②商品破損瑕疵（約22筆）：後送商品包裝破損，需完整包裝及內容物方可收退
+
+注意事項：
+- 每個項目說明要是一個完整的案件描述，不是單一關鍵字
+- 過濾無意義詞彙（謝謝、你好、請問等）
+- 筆數用「約」表示（因為是樣本）
+- 每個大類別列出1~2個最具代表性的案件類型
 
 ---
-本月詳細資料（大類別→中類別→主要反應事項）：
+本月資料：
 ${detailText}
-
-大類別總覽：${catSummary}
 ---
 
-請根據以上資料，針對佔比最高的2~3個大類別，每個類別列出1~2個中類別，並說明主要反應內容。數字請標示筆數。直接輸出內容，不需標題或前言。`;
+直接輸出重點說明內容，不需要標題或前言。`;
 
     const resp = await fetch(GEMINI_URL, {
       method: 'POST',
