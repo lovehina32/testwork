@@ -43,14 +43,29 @@ const AUTH = (function () {
   // ── 後端 API 端點 ─────────────────────────────────────────
   const API_BASE = 'https://rz-scheduler-v2-587734217935.asia-east1.run.app';
 
-  // ── 登入驗證（打後端日翊帳號驗證）────────────────────────
+  // ── 本地帳號驗證（後端連不到時的 fallback）───────────────
+  function localLogin(username, password) {
+    const users = getUsers();
+    const user  = users.find(u => u.username === username && u.password === password);
+    if (!user)         return { ok: false, reason: '帳號或密碼錯誤' };
+    if (!user.enabled) return { ok: false, reason: '此帳號已停用，請聯絡管理員' };
+    const session = { username: user.username, role: user.role, displayName: user.displayName, ts: Date.now() };
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    return { ok: true, session };
+  }
+
+  // ── 登入驗證（優先打後端日翊驗證，失敗則 fallback 本地帳號）──
   async function login(username, password) {
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5000); // 5 秒 timeout
       const resp = await fetch(`${API_BASE}/api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ USER_ID: username, PSW: password })
+        body: JSON.stringify({ USER_ID: username, PSW: password }),
+        signal: controller.signal
       });
+      clearTimeout(timeout);
       const data = await resp.json();
 
       if (resp.status === 403) return { ok: false, reason: '此帳號無使用權限' };
@@ -78,7 +93,8 @@ const AUTH = (function () {
       return { ok: true, session };
 
     } catch (e) {
-      return { ok: false, reason: '無法連線至伺服器，請確認網路狀態' };
+      // 後端連不到（網路錯誤或 timeout）→ fallback 本地帳號
+      return localLogin(username, password);
     }
   }
 
