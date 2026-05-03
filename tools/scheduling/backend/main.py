@@ -24,7 +24,20 @@ ALLOWED_ORIGINS = os.environ.get(
     'https://lovehina32.github.io'   # ← 部署後確認此網域正確
 ).split(',')
 
-CORS(app, origins=ALLOWED_ORIGINS, methods=['GET', 'POST', 'OPTIONS'])
+CORS(app,
+     origins=ALLOWED_ORIGINS,
+     methods=['GET', 'POST', 'OPTIONS'],
+     allow_headers=['Content-Type', 'Authorization'],
+     supports_credentials=False)
+
+
+def _cors_headers(resp, status=200):
+    origin = request.headers.get('Origin', '')
+    if origin in ALLOWED_ORIGINS:
+        resp.headers['Access-Control-Allow-Origin']  = origin
+        resp.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+        resp.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+    return resp
 
 
 # ── 健康檢查 ─────────────────────────────────────────────
@@ -87,8 +100,10 @@ def schedule():
 # 白名單：允許使用 OpsHub 的日翊帳號（空白表示全開放）
 ALLOWED_USERS = os.environ.get('ALLOWED_USERS', '').split(',')
 
-@app.route('/api/login', methods=['POST'])
+@app.route('/api/login', methods=['POST', 'OPTIONS'])
 def login():
+    if request.method == 'OPTIONS':
+        return _cors_headers(app.make_response(''), 204)
     body = request.get_json(force=True) or {}
     user_id  = str(body.get('USER_ID', '')).strip()[:15]
     password = str(body.get('PSW', ''))[:30]
@@ -119,8 +134,10 @@ def login():
 
 
 # ── Gemini 代理：保護 API Key 不外露 ────────────────────
-@app.route('/api/gemini', methods=['POST'])
+@app.route('/api/gemini', methods=['POST', 'OPTIONS'])
 def gemini_proxy():
+    if request.method == 'OPTIONS':
+        return _cors_headers(app.make_response(''), 204)
     GEMINI_KEY = os.environ.get('GEMINI_API_KEY', '')
     if not GEMINI_KEY:
         return jsonify({'error': 'GEMINI_API_KEY 未設定'}), 500
