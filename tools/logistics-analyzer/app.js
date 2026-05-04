@@ -661,20 +661,23 @@ async function generateMonthlyHighlights(mr) {
     function groupByProduct(issues) {
       const groups = {};
       issues.forEach(iss => {
-        // 取前20字作為分組key，過濾電話、日期等雜訊
-        const key = iss
-          .replace(/\d{10,}/g, '')        // 手機號碼
-          .replace(/\d{1,2}\/\d{1,2}/g, '') // 日期
-          .replace(/[，。！？()（）]/g, '')
-          .trim()
-          .slice(0, 20);
-        if (key.length < 3) return;
-        if (!groups[key]) groups[key] = { count: 0, sample: iss };
+        // 清除系統代碼、電話、日期，只保留有意義的文字
+        const cleaned = iss
+          .replace(/\[\[.+?\]\][\d,]+/g, '') // 清除[[訂購]]代碼
+          .replace(/\d{10,}/g, '')              // 手機號碼
+          .replace(/\d{1,2}\/\d{1,2}/g, '')    // 日期
+          .replace(/[【】()（）「」『』]/g, '')
+          .replace(/\s+/g, ' ')
+          .trim();
+        if (cleaned.length < 4) return;
+        // 取前15字作為分組 key
+        const key = cleaned.slice(0, 15);
+        if (!groups[key]) groups[key] = { count: 0, sample: cleaned };
         groups[key].count++;
       });
       return Object.values(groups)
         .sort((a, b) => b.count - a.count)
-        .slice(0, 4); // 每小類取前4個商品群組
+        .slice(0, 4);
     }
 
     // 格式化為 prompt 用的文字（前2大類，每類精準統計）
