@@ -678,7 +678,7 @@ async function generateMonthlyHighlights(mr) {
     }
 
     // 格式化為 prompt 用的文字（前2大類，每類精準統計）
-    const detailText = mr.categories.slice(0, 2).map(cat => {
+    const detailText = mr.categories.map(cat => {
       const minors = catDetail[cat.name] || {};
       const minorLines = Object.entries(minors)
         .sort((a,b)=>b[1].length-a[1].length)
@@ -715,7 +715,7 @@ async function generateMonthlyHighlights(mr) {
 - 依照資料中的商品群組筆數，最多的排第一
 - 每個小類的每個商品群組獨立一句，句尾加（XX筆）
 - 筆數直接用資料中的數字，不要自己估算
-- 只輸出2個大類，每類2個小類（①②）
+- 輸出所有大類，每類2個小類（①②）
 - 直接輸出，不需要標題或結語
 
 ---
@@ -723,7 +723,7 @@ async function generateMonthlyHighlights(mr) {
 \${detailText}
 ---
 
-請整理成重點說明：`;
+請將所有大類整理成重點說明：`;
 
     const resp = await fetch(GEMINI_URL, {
       method: 'POST',
