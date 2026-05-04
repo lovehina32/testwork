@@ -646,17 +646,19 @@ async function generateMonthlyHighlights(mr) {
       issuesByMajor[r.major].push(String(r.issue).trim());
     });
 
-    // 格式化為 prompt 用的文字（每大類別取前30筆反應事項）
-    const detailText = mr.categories.slice(0, 3).map(cat => {
+    // 格式化為 prompt 用的文字（只取前2大類，每類取前50筆，確保資料夠豐富）
+    const detailText = mr.categories.slice(0, 2).map(cat => {
       const minors = catDetail[cat.name] || {};
-      const minorSummary = Object.entries(minors)
+      const minorLines = Object.entries(minors)
         .sort((a,b)=>b[1].length-a[1].length)
-        .slice(0,3)
-        .map(([name,issues])=>`${name}（${issues.length}筆）`)
-        .join('、');
-      const sampleIssues = (issuesByMajor[cat.name]||[]).slice(0,30).join('\n');
-      return `【${cat.name}】${cat.count}件（${cat.pct.toFixed(0)}%）\n小類別：${minorSummary}\n反應事項範例：\n${sampleIssues}`;
-    }).join('\n\n---\n\n');
+        .slice(0, 5)
+        .map(([name, issues]) => {
+          const samples = issues.slice(0, 10).join('\n  ');
+          return `  【${name}】${issues.length}筆\n  ${samples}`;
+        })
+        .join('\n');
+      return `【大類：${cat.name}】總計${cat.count}件（佔比${cat.pct.toFixed(0)}%）\n${minorLines}`;
+    }).join('\n\n===\n\n');
 
     const sampleIssues = mr.rawSample
       ?.filter(r => r.issue)
@@ -678,11 +680,11 @@ async function generateMonthlyHighlights(mr) {
 ②4/20下架品項-FMC紡織品（發熱衣、素色圍巾等），反應商品滿退、數量退錯、退貨單或商品未回（28筆）。
 
 【重要規則】
-- 每個大類別的描述必須具體，包含：實際商品名稱、具體原因、處理方式、筆數
-- 若有前月比數據請標示（如：前月比178%）
-- 案件描述要完整呈現客服處理的來龍去脈，不能只寫關鍵字
-- 筆數直接寫實際數字，不用加「約」
-- 每個大類別列出2~3個最具代表性且筆數較多的案件類型
+- 只輸出最多2個大類別
+- 每個大類別列出2個小類，每個小類的描述必須像範例一樣詳細：包含實際商品名稱（代碼）、具體原因、客服或相關部門的處理結果、筆數
+- 描述風格要像客服主管在寫給老闆看的月報，語氣簡潔但資訊完整
+- 不要用「如」、「例如」等字眼，直接描述實際發生的案件
+- 筆數直接寫實際數字，格式為（XX筆）放在句尾
 - 過濾無意義詞彙（謝謝、你好、請問等）
 - 直接輸出內容，不需要標題、前言或結語
 
