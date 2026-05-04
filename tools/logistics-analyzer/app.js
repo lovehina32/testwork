@@ -647,72 +647,48 @@ async function generateMonthlyHighlights(mr) {
     const catSummary = mr.categories.map(c => `${c.name}：${c.count}件（${c.pct.toFixed(0)}%）`).join('、');
     const midSummary = mr.midCategories?.slice(0, 10).map(c => `${c.name}：${c.count}件`).join('、') || '';
 
-    // 建立大類別→小類別→反應事項的三層統計
+    // ── 精準分析：按大類→小類→商品名稱統計實際筆數 ──────────
     const catDetail = {};
     mr.rawSample?.forEach(r => {
-      if (!r.major) return;
+      if (!r.major || !r.issue) return;
       if (!catDetail[r.major]) catDetail[r.major] = {};
       const minor = r.minor || r.mid || '（未分類）';
       if (!catDetail[r.major][minor]) catDetail[r.major][minor] = [];
-      if (r.issue) catDetail[r.major][minor].push(String(r.issue).trim());
+      catDetail[r.major][minor].push(String(r.issue).trim());
     });
 
-    // 從反應事項清單中提取最常出現的關鍵詞（斷詞取2~5字片段）
-    function topPhrases(issues, topN=2) {
-      const freq = {};
+    // 在每個小類中，統計相似案件（同商品）的筆數
+    function groupByProduct(issues) {
+      const groups = {};
       issues.forEach(iss => {
-        const cleaned = iss.replace(/[，。！？、\s]/g,'').slice(0,50);
-        for (let len=4; len<=8; len++) {
-          for (let i=0; i<=cleaned.length-len; i++) {
-            const phrase = cleaned.slice(i, i+len);
-            if (phrase.length >= 4) freq[phrase] = (freq[phrase]||0)+1;
-          }
-        }
+        // 取前20字作為分組key，過濾電話、日期等雜訊
+        const key = iss
+          .replace(/\d{10,}/g, '')        // 手機號碼
+          .replace(/\d{1,2}\/\d{1,2}/g, '') // 日期
+          .replace(/[，。！？()（）]/g, '')
+          .trim()
+          .slice(0, 20);
+        if (key.length < 3) return;
+        if (!groups[key]) groups[key] = { count: 0, sample: iss };
+        groups[key].count++;
       });
-      return Object.entries(freq)
-        .filter(([k,v])=>v>=2)
-        .sort((a,b)=>b[1]-a[1])
-        .slice(0,topN)
-        .map(([k,v])=>`「${k}」(${v}筆)`);
+      return Object.values(groups)
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 4); // 每小類取前4個商品群組
     }
 
-    // 收集每個大類別下的反應事項（完整內容）
-    const issuesByMajor = {};
-    mr.rawSample?.forEach(r => {
-      if (!r.major || !r.issue) return;
-      if (!issuesByMajor[r.major]) issuesByMajor[r.major] = [];
-      issuesByMajor[r.major].push(String(r.issue).trim());
-    });
-
-    // 格式化為 prompt 用的文字（前2大類，每類分析高頻關鍵詞）
+    // 格式化為 prompt 用的文字（前2大類，每類精準統計）
     const detailText = mr.categories.slice(0, 2).map(cat => {
       const minors = catDetail[cat.name] || {};
       const minorLines = Object.entries(minors)
         .sort((a,b)=>b[1].length-a[1].length)
-        .slice(0, 4)
+        .slice(0, 3)
         .map(([name, issues]) => {
-          // 統計高頻關鍵詞（含商品名稱）
-          const freq = {};
-          issues.forEach(iss => {
-            // 取每筆前50字，找重複出現的片段
-            const cleaned = iss.replace(/[，。！？、\s\n]/g,'').slice(0,60);
-            for (let len=4; len<=10; len++) {
-              for (let i=0; i<=cleaned.length-len; i++) {
-                const phrase = cleaned.slice(i, i+len);
-                if (phrase.length >= 4) freq[phrase] = (freq[phrase]||0)+1;
-              }
-            }
-          });
-          // 取前3個高頻詞
-          const topWords = Object.entries(freq)
-            .filter(([k,v])=>v>=3)
-            .sort((a,b)=>b[1]-a[1])
-            .slice(0,3)
-            .map(([k,v])=>`「${k}」(${v}筆)`)
-            .join('、');
-          // 取3筆有意義的樣本
-          const samples = issues.filter(i=>i.length>4).slice(0,3).join('\n    ');
-          return `  【${name}】${issues.length}筆${topWords ? '，高頻詞：'+topWords : ''}\n    ${samples}`;
+          const groups = groupByProduct(issues);
+          const groupLines = groups
+            .map(g => `    - ${g.sample.slice(0,60)}（${g.count}筆）`)
+            .join('\n');
+          return `  【${name}】共${issues.length}筆\n${groupLines}`;
         })
         .join('\n');
       return `【大類：${cat.name}】總計${cat.count}件（佔比${cat.pct.toFixed(0)}%）\n${minorLines}`;
@@ -724,36 +700,30 @@ async function generateMonthlyHighlights(mr) {
       .map(r => r.issue)
       .join('\n') || '';
 
-    const prompt = `你是一位資深客服數據分析師，負責每月產出客服案件重點說明報告。
-
-請根據以下原始案件資料，產生詳細的「重點說明」，格式與要求如下：
+    const prompt = `你是一位資深客服數據分析師。以下資料已按「大類→小類→商品群組」統計好筆數，請直接整理成月報重點說明。
 
 【輸出格式範例】
 1、「商品訂購」問題前月比178%：
-①訂購BX-48 隨機強化組，商品已無庫存（34筆），訂購CX-15 邪神狂悠，商品已無庫存（48筆）。訂購一番賞落地陳列架，庫存出貨。（217筆）
-②訂購0429檔期郵電卡-富士3D造型相機悠遊卡，登記表格至4/22截止。（41筆），後續商品企劃課通知-單品已配量完畢，無庫存。（31筆）
+①訂購BX-48 隨機強化組，商品已無庫存（34筆）。訂購CX-15 邪神狂悠，商品已無庫存（48筆）。訂購一番賞落地陳列架，庫存出貨（217筆）。
+②訂購0429檔期郵電卡-富士3D造型相機悠遊卡，登記表格至4/22截止（41筆），後續商品企劃課通知-單品已配量完畢，無庫存（31筆）。
 
 2、「一般商品」問題佔比22%：
-①反應連假退貨單及退貨商品司機收收，查詢被返修，經大溪理貨二課通知因近期適逢連續假期，且部分商品項數量及退貨數較高，導致作業量增加，店鋪帳務發生反修情形。當時已先行攔截未回提醒單暫不出單，但仍有店鋪於系統中發現帳務遭反修。被反修帳務於4/9將全數完成認帳，敬請店鋪於2天後確認帳務是否已順利入帳。（42筆）
-②4/20下架品項-FMC紡織品（發熱衣、素色圍巾等），反應商品滿退、數量退錯、退貨單或商品未回（28筆）。
+①反應連假退貨單及退貨商品司機收收，查詢被返修，被反修帳務於4/9將全數完成認帳（42筆）。
+②4/20下架品項-FMC紡織品，反應商品滿退、數量退錯（28筆）。
 
-【重要規則】
-- 只輸出最多2個大類別
-- 每個大類別列出2個小類（用①②標示）
-- 同一個小類中若有多個不同商品，必須分開各自描述，用句號分隔，每個商品後面加上（XX筆）
-- 每個商品的描述要包含：實際商品名稱、具體原因或狀況、客服處理方式、筆數
-- 描述風格要像客服主管在寫給老闆看的月報，語氣簡潔但資訊完整
-- 不要用「如」、「例如」等字眼，直接描述實際發生的案件
-- 筆數直接寫實際數字，格式為（XX筆）
-- 過濾無意義詞彙（謝謝、你好、請問等）
-- 直接輸出內容，不需要標題、前言或結語
+【規則】
+- 依照資料中的商品群組筆數，最多的排第一
+- 每個小類的每個商品群組獨立一句，句尾加（XX筆）
+- 筆數直接用資料中的數字，不要自己估算
+- 只輸出2個大類，每類2個小類（①②）
+- 直接輸出，不需要標題或結語
 
 ---
-本月原始資料：
-${detailText}
+本月統計資料：
+\${detailText}
 ---
 
-請依照上述格式產生重點說明，每個小類描述控制在100字以內，確保完整輸出2個大類後結束：`;
+請整理成重點說明：`;
 
     const resp = await fetch(GEMINI_URL, {
       method: 'POST',
