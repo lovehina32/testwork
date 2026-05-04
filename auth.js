@@ -80,7 +80,8 @@ const AUTH = (function () {
       };
 
       if (code !== '000') {
-        return { ok: false, reason: errorMessages[code] || '系統發生錯誤，請聯絡管理員' };
+        // 日翊驗證失敗 → fallback 本地帳號
+        return localLogin(username, password);
       }
 
       const session = {
