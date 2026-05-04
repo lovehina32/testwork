@@ -154,7 +154,7 @@ def gemini_proxy():
             headers={'Content-Type': 'application/json'},
             method='POST'
         )
-        with urllib.request.urlopen(req, timeout=30) as res:
+        with urllib.request.urlopen(req, timeout=90) as res:
             result = json.loads(res.read().decode('utf-8'))
         return jsonify(result)
 

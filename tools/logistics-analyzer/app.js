@@ -353,7 +353,7 @@ async function runAnalysis() {
         categories: monthlyMajor,
         midCategories: midStats,
         dateRange,
-        rawSample: rows.map(r => {
+        rawSample: rows.slice(0, 2000).map(r => {
           let issue = COL.issue ? String(r[COL.issue] || '') : '';
           const result = COL.result ? String(r[COL.result] || '') : '';
 
@@ -677,7 +677,7 @@ async function generateMonthlyHighlights(mr) {
         .sort((a,b)=>b[1].length-a[1].length)
         .slice(0, 5)
         .map(([name, issues]) => {
-          const samples = issues.slice(0, 10).join('\n  ');
+          const samples = issues.slice(0, 5).join('\n  ');
           return `  【${name}】${issues.length}筆\n  ${samples}`;
         })
         .join('\n');
