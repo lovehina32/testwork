@@ -670,15 +670,35 @@ async function generateMonthlyHighlights(mr) {
       issuesByMajor[r.major].push(String(r.issue).trim());
     });
 
-    // 格式化為 prompt 用的文字（只取前2大類，每類取前50筆，確保資料夠豐富）
+    // 格式化為 prompt 用的文字（前2大類，每類分析高頻關鍵詞）
     const detailText = mr.categories.slice(0, 2).map(cat => {
       const minors = catDetail[cat.name] || {};
       const minorLines = Object.entries(minors)
         .sort((a,b)=>b[1].length-a[1].length)
-        .slice(0, 5)
+        .slice(0, 4)
         .map(([name, issues]) => {
-          const samples = issues.slice(0, 5).join('\n  ');
-          return `  【${name}】${issues.length}筆\n  ${samples}`;
+          // 統計高頻關鍵詞（含商品名稱）
+          const freq = {};
+          issues.forEach(iss => {
+            // 取每筆前50字，找重複出現的片段
+            const cleaned = iss.replace(/[，。！？、\s\n]/g,'').slice(0,60);
+            for (let len=4; len<=10; len++) {
+              for (let i=0; i<=cleaned.length-len; i++) {
+                const phrase = cleaned.slice(i, i+len);
+                if (phrase.length >= 4) freq[phrase] = (freq[phrase]||0)+1;
+              }
+            }
+          });
+          // 取前3個高頻詞
+          const topWords = Object.entries(freq)
+            .filter(([k,v])=>v>=3)
+            .sort((a,b)=>b[1]-a[1])
+            .slice(0,3)
+            .map(([k,v])=>`「${k}」(${v}筆)`)
+            .join('、');
+          // 取3筆有意義的樣本
+          const samples = issues.filter(i=>i.length>4).slice(0,3).join('\n    ');
+          return `  【${name}】${issues.length}筆${topWords ? '，高頻詞：'+topWords : ''}\n    ${samples}`;
         })
         .join('\n');
       return `【大類：${cat.name}】總計${cat.count}件（佔比${cat.pct.toFixed(0)}%）\n${minorLines}`;
