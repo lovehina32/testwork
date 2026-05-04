@@ -693,14 +693,14 @@ async function generateMonthlyHighlights(mr) {
 ${detailText}
 ---
 
-請依照上述格式產生重點說明：`;
+請依照上述格式產生重點說明，每個小類描述控制在100字以內，確保完整輸出2個大類後結束：`;
 
     const resp = await fetch(GEMINI_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.2, maxOutputTokens: 4000 }
+        generationConfig: { temperature: 0.2, maxOutputTokens: 8192 }
       })
     });
 
