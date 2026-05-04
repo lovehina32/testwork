@@ -353,13 +353,37 @@ async function runAnalysis() {
         categories: monthlyMajor,
         midCategories: midStats,
         dateRange,
-        rawSample: rows.slice(0, 500).map(r => ({
-          major: COL.majorCat ? r[COL.majorCat] : '',
-          mid:   COL.midCat   ? r[COL.midCat]   : '',
-          minor: COL.minorCat ? r[COL.minorCat] : '',
-          issue: COL.issue    ? r[COL.issue]     : '',
-          store: COL.store    ? r[COL.store]     : '',
-        }))
+        rawSample: rows.map(r => {
+          let issue = COL.issue ? String(r[COL.issue] || '') : '';
+          const result = COL.result ? String(r[COL.result] || '') : '';
+
+          // 若反應事項只有系統代碼（如[[訂購]]XXXXXXX）無文字描述
+          // 嘗試從處理結果欄補充商品名稱
+          const isCodeOnly = /^\s*(\[\[.+?\]\][\d,]+\s*)+\s*$/.test(issue);
+          if (isCodeOnly && result) {
+            // 從處理結果抓出商品名稱（過濾純日期/「已代訂」等無意義詞）
+            const productName = result
+              .replace(/已代訂購?[\s\S]*/g, '')
+              .replace(/\d{1,2}\/\d{1,2}.*/, '')
+              .replace(/到店.*/, '')
+              .trim();
+            if (productName.length > 2) {
+              issue = `訂購${productName}`;
+            }
+          }
+
+          // 若反應事項含系統代碼又含文字，清除代碼只保留文字
+          issue = issue.replace(/\[\[.+?\]\][\d,]+\s*/g, '').trim() || issue;
+
+          return {
+            major: COL.majorCat ? r[COL.majorCat] : '',
+            mid:   COL.midCat   ? r[COL.midCat]   : '',
+            minor: COL.minorCat ? r[COL.minorCat] : '',
+            issue: issue,
+            result: result,
+            store: COL.store    ? r[COL.store]     : '',
+          };
+        })
       },
     };
 
