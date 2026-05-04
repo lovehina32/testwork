@@ -361,14 +361,28 @@ async function runAnalysis() {
           // 嘗試從處理結果欄補充商品名稱
           const isCodeOnly = /^\s*(\[\[.+?\]\][\d,]+\s*)+\s*$/.test(issue);
           if (isCodeOnly && result) {
-            // 從處理結果抓出商品名稱（過濾純日期/「已代訂」等無意義詞）
-            const productName = result
-              .replace(/已代訂購?[\s\S]*/g, '')
-              .replace(/\d{1,2}\/\d{1,2}.*/, '')
-              .replace(/到店.*/, '')
-              .trim();
+            // 從處理結果抓取商品名稱
+            // 情況1：「已代訂，商品名稱」或「已代訂購，商品名稱」→ 取逗號後的名稱
+            // 情況2：「商品名稱，已代訂」→ 取逗號前的名稱
+            let productName = '';
+            const afterComma = result.match(/已代訂購?[，,、](.+)/);
+            const beforeComma = result.match(/^(.+)[，,、]已代訂/);
+            const afterSpace  = result.match(/已代訂購?\s+(.+)/);
+            if (afterComma) {
+              productName = afterComma[1].replace(/\(.*\)/, '').replace(/\d{1,2}\/\d{1,2}.*/, '').trim();
+            } else if (beforeComma) {
+              productName = beforeComma[1].trim();
+            } else if (afterSpace) {
+              productName = afterSpace[1].replace(/\d{1,2}\/\d{1,2}.*/, '').trim();
+            }
             if (productName.length > 2) {
               issue = `訂購${productName}`;
+            } else {
+              // fallback：處理結果本身有意義就直接用
+              const cleanResult = result.replace(/\d{1,2}\/\d{1,2}[^\n]*/g,'').replace(/到店.*/,'').trim();
+              if (cleanResult.length > 3 && !/^已代訂/.test(cleanResult)) {
+                issue = cleanResult;
+              }
             }
           }
 
