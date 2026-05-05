@@ -277,6 +277,13 @@
       新增文章
     </button>
 
+    <div class="sb-section-label">快速導覽</div>
+    <ul class="sb-nav">
+      <li><button class="sb-nav-item" id="nav-home" onclick="showHome()">
+        <span class="sb-nav-icon">🏠</span> 首頁
+      </button></li>
+    </ul>
+
     <div class="sb-section-label">分類</div>
     <ul class="sb-nav">
       <li><button class="sb-nav-item active" id="filter-all" onclick="setFilter('all')">
@@ -823,7 +830,16 @@
     }
   }
 
+  function showHome() {
+    currentDoc = null;
+    document.querySelectorAll('.sb-item').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.sb-nav-item').forEach(btn => btn.classList.remove('active'));
+    document.getElementById('nav-home').classList.add('active');
+    show('welcome');
+  }
+
   function setFilter(f) {
+    document.getElementById('nav-home').classList.remove('active');
     activeFilter = f;
     renderList();
   }
