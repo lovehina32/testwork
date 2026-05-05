@@ -182,6 +182,46 @@
 
     /* Count badge */
     .sb-count { font-size: 10px; font-family: var(--mono); background: var(--bg3); color: var(--ink3); padding: 1px 7px; border-radius: 20px; margin-left: auto; }
+
+    /* ── Recent Activity Panel ── */
+    .activity-panel { flex: 1; overflow-y: auto; padding: 28px 32px; background: #f9fafb; }
+    .activity-panel::-webkit-scrollbar { width: 4px; }
+    .activity-panel::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 4px; }
+
+    .activity-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+    .activity-heading { font-size: 18px; font-weight: 700; color: var(--ink); }
+    .activity-count-badge { font-size: 12px; font-family: var(--mono); color: var(--ink3); background: var(--bg3); border: 1px solid var(--line); padding: 3px 12px; border-radius: 20px; }
+
+    .activity-section { margin-bottom: 24px; }
+    .activity-section-title { font-size: 11px; font-weight: 600; color: var(--ink3); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+    .activity-section-title::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+
+    .activity-item { background: var(--bg2); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 14px 18px; margin-bottom: 8px; display: flex; align-items: center; gap: 14px; cursor: pointer; transition: box-shadow .15s, border-color .15s; }
+    .activity-item:hover { border-color: var(--accent); box-shadow: 0 2px 12px rgba(59,130,246,0.10); }
+    .activity-item.deleted { cursor: default; opacity: .75; }
+    .activity-item.deleted:hover { border-color: var(--line); box-shadow: none; }
+
+    .activity-date { font-size: 12px; font-family: var(--mono); color: var(--ink3); min-width: 50px; text-align: center; line-height: 1.4; }
+    .activity-date-day { font-size: 16px; font-weight: 700; color: var(--ink2); display: block; }
+
+    .activity-badge { font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 500; white-space: nowrap; flex-shrink: 0; }
+    .badge-create { background: var(--green-bg); color: var(--green); }
+    .badge-edit   { background: var(--amber-bg); color: var(--amber); }
+    .badge-delete { background: var(--red-bg);   color: var(--red); }
+
+    .activity-body { flex: 1; min-width: 0; }
+    .activity-title { font-size: 14px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .activity-title.deleted { text-decoration: line-through; color: var(--ink3); }
+    .activity-subtitle { font-size: 12px; color: var(--ink3); margin-top: 3px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+    .activity-arrow { color: var(--ink3); flex-shrink: 0; }
+
+    .activity-empty { text-align: center; padding: 60px 20px; color: var(--ink3); }
+    .activity-empty-icon { font-size: 40px; margin-bottom: 12px; }
+    .activity-empty-text { font-size: 14px; margin-bottom: 20px; line-height: 1.7; }
+
+    .activity-new-btn { background: var(--accent); color: #fff; border: none; border-radius: var(--radius); padding: 10px 24px; font-family: var(--font); font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity .15s; }
+    .activity-new-btn:hover { opacity: .85; }
   </style>
 </head>
 <body>
@@ -274,12 +314,19 @@
   <!-- Main -->
   <main class="main" id="mainPanel">
 
-    <!-- Welcome -->
-    <div class="welcome" id="welcomePanel">
-      <div class="welcome-icon">📚</div>
-      <h2>知識資料庫</h2>
-      <p>集中管理客服 SOP、FAQ 與規範，全部即時儲存至 Firestore。</p>
-      <button class="welcome-btn" onclick="openEditor(null)">＋ 新增第一篇文章</button>
+    <!-- Activity Panel (近期動態, replaces old welcome) -->
+    <div class="activity-panel" id="welcomePanel">
+      <div class="activity-top">
+        <div class="activity-heading">近期動態</div>
+        <div class="activity-count-badge" id="activityCountBadge">載入中…</div>
+      </div>
+      <div id="activityContent">
+        <div class="activity-empty">
+          <div class="activity-empty-icon">📚</div>
+          <div class="activity-empty-text">知識資料庫<br>集中管理客服 SOP、FAQ 與規範，全部即時儲存至 Firestore。</div>
+          <button class="activity-new-btn" onclick="openEditor(null)">＋ 新增第一篇文章</button>
+        </div>
+      </div>
     </div>
 
     <!-- Article view -->
@@ -413,6 +460,136 @@
     document.getElementById('loadingOverlay').style.display = 'none';
   }
 
+  // ── 近期動態 ──────────────────────────────────────────────
+  async function loadRecentActivity() {
+    const container = document.getElementById('activityContent');
+    const badge     = document.getElementById('activityCountBadge');
+
+    // 只在 welcomePanel 顯示時才需要更新（節省讀取次數）
+    // 但每次 allDocs 更新都重算，因為資料已在記憶體中
+
+    // 取最近 20 筆 knowledge（已按 updatedAt desc）
+    const recentDocs = allDocs.slice(0, 20);
+
+    // 讀取 audit_log（刪除記錄）最近 10 筆
+    let deletedItems = [];
+    try {
+      const auditSnap = await db.collection('audit_log')
+        .orderBy('timestamp', 'desc').limit(10).get();
+      deletedItems = auditSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch(e) { /* audit_log 可能為空，忽略錯誤 */ }
+
+    // 合併並統一格式
+    const combined = [];
+
+    recentDocs.forEach(d => {
+      const isNew = (d.version || 1) === 1;
+      combined.push({
+        type:      isNew ? 'create' : 'edit',
+        title:     d.title || '（無標題）',
+        category:  d.category,
+        operator:  d.lastEditedBy || d.author || '',
+        ts:        d.updatedAt,
+        docRef:    d
+      });
+    });
+
+    deletedItems.forEach(a => {
+      combined.push({
+        type:     'delete',
+        title:    a.title || '（已刪除）',
+        category: null,
+        operator: a.operator || '',
+        ts:       a.timestamp,
+        docRef:   null
+      });
+    });
+
+    // 按時間排序（最新在前）
+    combined.sort((a, b) => {
+      const ta = a.ts && a.ts.toDate ? a.ts.toDate() : new Date(0);
+      const tb = b.ts && b.ts.toDate ? b.ts.toDate() : new Date(0);
+      return tb - ta;
+    });
+
+    const total = combined.length;
+    badge.textContent = total + ' 則動態';
+
+    if (total === 0) {
+      container.innerHTML = `
+        <div class="activity-empty">
+          <div class="activity-empty-icon">📚</div>
+          <div class="activity-empty-text">知識資料庫<br>集中管理客服 SOP、FAQ 與規範，全部即時儲存至 Firestore。</div>
+          <button class="activity-new-btn" onclick="openEditor(null)">＋ 新增第一篇文章</button>
+        </div>`;
+      return;
+    }
+
+    // 按「今天 / 近7天 / 更早」分組
+    const now   = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const week  = new Date(today); week.setDate(week.getDate() - 7);
+
+    const groups = [
+      { key: 'today',  label: '今天',   items: [] },
+      { key: 'week',   label: '近 7 天', items: [] },
+      { key: 'older',  label: '更早',   items: [] },
+    ];
+
+    combined.forEach(item => {
+      const d = item.ts && item.ts.toDate ? item.ts.toDate() : null;
+      if (!d) { groups[2].items.push(item); return; }
+      if (d >= today)       groups[0].items.push(item);
+      else if (d >= week)   groups[1].items.push(item);
+      else                  groups[2].items.push(item);
+    });
+
+    const BADGE = {
+      create: { cls: 'badge-create', label: '新增' },
+      edit:   { cls: 'badge-edit',   label: '修改' },
+      delete: { cls: 'badge-delete', label: '刪除' },
+    };
+
+    let html = '';
+    groups.forEach(g => {
+      if (g.items.length === 0) return;
+      html += `<div class="activity-section">
+        <div class="activity-section-title">${g.label}</div>`;
+
+      g.items.forEach(item => {
+        const b   = BADGE[item.type] || BADGE.edit;
+        const d   = item.ts && item.ts.toDate ? item.ts.toDate() : null;
+        const day = d ? d.getDate() : '—';
+        const mon = d ? (d.getMonth()+1) + '月' : '';
+        const time = d ? d.toLocaleTimeString('zh-TW', {hour:'2-digit', minute:'2-digit'}) : '';
+        const catBadgeHtml = item.category ? catBadge(item.category) : '';
+        const isDeleted = item.type === 'delete';
+        const clickable = !isDeleted ? `onclick="viewDoc(${JSON.stringify({...item.docRef}).replace(/"/g,'&quot;')})"` : '';
+        const arrowHtml = !isDeleted ? `<div class="activity-arrow"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>` : '';
+
+        html += `<div class="activity-item${isDeleted ? ' deleted' : ''}" ${!isDeleted ? `onclick="viewDoc(allDocs.find(x=>x.id==='${item.docRef ? item.docRef.id : ''}')||null)"` : ''}>
+          <div class="activity-date">
+            <span class="activity-date-day">${day}</span>
+            ${mon}<br><span style="font-size:10px">${time}</span>
+          </div>
+          <span class="activity-badge ${b.cls}">${b.label}</span>
+          <div class="activity-body">
+            <div class="activity-title${isDeleted ? ' deleted' : ''}">${esc(item.title)}</div>
+            <div class="activity-subtitle">
+              ${catBadgeHtml}
+              ${item.operator ? `<span>👤 ${esc(item.operator)}</span>` : ''}
+            </div>
+          </div>
+          ${arrowHtml}
+        </div>`;
+      });
+
+      html += `</div>`;
+    });
+
+    container.innerHTML = html;
+  }
+
   function init() {
     // Timeout fallback — if Firestore doesn't respond in 8s, show error
     const timeout = setTimeout(() => {
@@ -426,6 +603,7 @@
       clearTimeout(timeout);
       allDocs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       renderList();
+      loadRecentActivity();
       hideLoading();
       document.getElementById('connDot').classList.remove('offline');
       document.getElementById('connLabel').textContent = allDocs.length + ' 篇';
@@ -656,6 +834,7 @@
     document.getElementById('welcomePanel').style.display = panel === 'welcome' ? '' : 'none';
     document.getElementById('articlePanel').style.display = panel === 'article' ? '' : 'none';
     document.getElementById('editorPanel').style.display  = panel === 'editor'  ? '' : 'none';
+    if (panel === 'welcome') loadRecentActivity();
   }
 
   // 顯示 header 帳號資訊
