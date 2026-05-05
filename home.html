@@ -124,6 +124,28 @@
           </a>
 
 
+          <!-- Tool 4：知識資料庫（全員） -->
+          <a href="tools/knowledge-base/index.html" class="tool-card" id="card-knowledge" data-group="all">
+            <div class="tc-header">
+              <div class="tc-icon">📚</div>
+              <div class="tc-badge" style="background:var(--success-bg);color:var(--success)">Firestore 即時同步</div>
+            </div>
+            <h2 class="tc-title">知識<br>資料庫</h2>
+            <p class="tc-desc">集中管理客服 SOP、FAQ 與規範，支援全文搜尋、版本歷史，即時寫入 Firestore。</p>
+            <div class="tc-features">
+              <div class="tc-feat"><span class="feat-dot"></span>新增 / 編輯 / 刪除文章</div>
+              <div class="tc-feat"><span class="feat-dot"></span>分類篩選：SOP / FAQ / 規範 / 注意事項</div>
+              <div class="tc-feat"><span class="feat-dot"></span>關鍵字全文搜尋</div>
+              <div class="tc-feat"><span class="feat-dot"></span>完整版本歷史記錄</div>
+            </div>
+            <div class="tc-footer">
+              <span class="tc-tag">Firestore</span>
+              <span class="tc-tag">即時同步</span>
+              <span class="tc-tag tc-tag-group">全員</span>
+              <span class="tc-enter">進入工具 →</span>
+            </div>
+          </a>
+
           <!-- Tool 3：排班工具（一線客服 + 廠商客服） -->
           <a href="tools/scheduling/index.html" class="tool-card" id="card-scheduling" data-group="all">
             <div class="tc-header">
@@ -297,6 +319,11 @@
       if (cardDailyReport) showCard(cardDailyReport, 'dailyReport', 'frontline');
       showCard(cardLogistics,  'logistics',  'frontline');
       showCard(cardClaims,     'claims',     'vendor');
+      const cardKnowledge = document.getElementById('card-knowledge');
+      if (cardKnowledge) {
+        const hasKB = (s && s.role === 'admin') || tools.logistics || tools.claims;
+        cardKnowledge.style.display = hasKB ? '' : 'none';
+      }
       // 排班工具：僅在首頁（tab=all）顯示，一線/廠商分頁不顯示
       const cardSched = document.getElementById('card-scheduling');
       if (cardSched) {

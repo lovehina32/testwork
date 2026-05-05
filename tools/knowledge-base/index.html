@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>知識資料庫 — 日翊客服小工具</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:        #0f1117;
+      --bg2:       #161b27;
+      --bg3:       #1e2535;
+      --line:      #2a3347;
+      --line2:     #38485f;
+      --ink:       #e8edf5;
+      --ink2:      #94a3b8;
+      --ink3:      #5a6a80;
+      --accent:    #3b82f6;
+      --accent2:   #60a5fa;
+      --accent-bg: rgba(59,130,246,0.12);
+      --green:     #10b981;
+      --green-bg:  rgba(16,185,129,0.12);
+      --amber:     #f59e0b;
+      --amber-bg:  rgba(245,158,11,0.12);
+      --red:       #ef4444;
+      --red-bg:    rgba(239,68,68,0.12);
+      --purple:    #8b5cf6;
+      --purple-bg: rgba(139,92,246,0.12);
+      --radius:    8px;
+      --radius-lg: 14px;
+      --font:      'Noto Sans TC', sans-serif;
+      --mono:      'JetBrains Mono', monospace;
+      --shadow:    0 4px 24px rgba(0,0,0,0.35);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 15px; }
+    body { font-family: var(--font); background: var(--bg); color: var(--ink); min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* ── Header ── */
+    .hdr { display: flex; align-items: center; gap: 16px; padding: 0 24px; height: 56px; border-bottom: 1px solid var(--line); background: var(--bg2); position: sticky; top: 0; z-index: 100; }
+    .hdr-back { color: var(--ink2); text-decoration: none; font-size: 13px; display: flex; align-items: center; gap: 6px; transition: color .15s; }
+    .hdr-back:hover { color: var(--ink); }
+    .hdr-title { font-size: 15px; font-weight: 700; color: var(--ink); flex: 1; }
+    .hdr-badge { font-size: 11px; font-family: var(--mono); background: var(--accent-bg); color: var(--accent2); padding: 3px 8px; border-radius: 20px; border: 1px solid rgba(59,130,246,0.25); }
+    .hdr-status { font-size: 11px; font-family: var(--mono); color: var(--ink3); display: flex; align-items: center; gap: 5px; }
+    .hdr-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 2px var(--green-bg); }
+    .hdr-dot.offline { background: var(--red); box-shadow: 0 0 0 2px var(--red-bg); }
+
+    /* ── Layout ── */
+    .layout { display: grid; grid-template-columns: 260px 1fr; flex: 1; height: calc(100vh - 56px); overflow: hidden; }
+
+    /* ── Sidebar ── */
+    .sidebar { background: var(--bg2); border-right: 1px solid var(--line); display: flex; flex-direction: column; overflow: hidden; }
+    .sb-search { padding: 14px; border-bottom: 1px solid var(--line); }
+    .sb-search-box { display: flex; align-items: center; gap: 8px; background: var(--bg3); border: 1px solid var(--line); border-radius: var(--radius); padding: 0 10px; transition: border-color .15s; }
+    .sb-search-box:focus-within { border-color: var(--accent); }
+    .sb-search-box svg { color: var(--ink3); flex-shrink: 0; }
+    .sb-search-box input { background: none; border: none; outline: none; color: var(--ink); font-family: var(--font); font-size: 13px; width: 100%; padding: 8px 0; }
+    .sb-search-box input::placeholder { color: var(--ink3); }
+
+    .sb-toolbar { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+    .sb-new-btn { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; color: var(--accent2); background: var(--accent-bg); border: 1px solid rgba(59,130,246,0.25); border-radius: var(--radius); padding: 6px 12px; cursor: pointer; transition: all .15s; white-space: nowrap; }
+    .sb-new-btn:hover { background: rgba(59,130,246,0.2); }
+    .sb-filter { font-size: 11px; font-family: var(--mono); color: var(--ink3); background: var(--bg3); border: 1px solid var(--line); border-radius: var(--radius); padding: 5px 10px; cursor: pointer; transition: all .15s; }
+    .sb-filter.active, .sb-filter:hover { border-color: var(--accent); color: var(--accent2); background: var(--accent-bg); }
+
+    .sb-list { flex: 1; overflow-y: auto; padding: 8px; }
+    .sb-list::-webkit-scrollbar { width: 4px; }
+    .sb-list::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 4px; }
+
+    .sb-empty { text-align: center; padding: 40px 20px; color: var(--ink3); font-size: 13px; }
+
+    .sb-item { padding: 10px 12px; border-radius: var(--radius); cursor: pointer; transition: background .12s; margin-bottom: 2px; border: 1px solid transparent; }
+    .sb-item:hover { background: var(--bg3); }
+    .sb-item.active { background: var(--accent-bg); border-color: rgba(59,130,246,0.3); }
+    .sb-item-title { font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sb-item-meta { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--ink3); font-family: var(--mono); }
+    .sb-item-cat { font-size: 10px; padding: 1px 6px; border-radius: 10px; font-family: var(--font); font-weight: 500; }
+    .sb-item-snippet { font-size: 11px; color: var(--ink3); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* ── Main Content ── */
+    .main { display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
+
+    /* Welcome state */
+    .welcome { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 40px; }
+    .welcome-icon { width: 64px; height: 64px; background: var(--accent-bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; }
+    .welcome h2 { font-size: 20px; font-weight: 700; }
+    .welcome p { color: var(--ink2); text-align: center; font-size: 14px; line-height: 1.7; max-width: 300px; }
+    .welcome-btn { background: var(--accent); color: #fff; border: none; border-radius: var(--radius); padding: 10px 24px; font-family: var(--font); font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity .15s; }
+    .welcome-btn:hover { opacity: .85; }
+
+    /* Article view */
+    .article-view { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .article-hdr { display: flex; align-items: flex-start; gap: 12px; padding: 20px 28px 16px; border-bottom: 1px solid var(--line); }
+    .article-hdr-main { flex: 1; min-width: 0; }
+    .article-cat-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+    .article-title { font-size: 20px; font-weight: 700; color: var(--ink); line-height: 1.4; }
+    .article-meta { display: flex; align-items: center; gap: 14px; margin-top: 8px; font-size: 11px; font-family: var(--mono); color: var(--ink3); flex-wrap: wrap; }
+    .article-actions { display: flex; gap: 8px; flex-shrink: 0; }
+    .btn-icon { width: 32px; height: 32px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--bg2); color: var(--ink2); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+    .btn-icon:hover { border-color: var(--accent); color: var(--accent2); background: var(--accent-bg); }
+    .btn-icon.danger:hover { border-color: var(--red); color: var(--red); background: var(--red-bg); }
+
+    .article-body { flex: 1; overflow-y: auto; padding: 24px 28px; }
+    .article-body::-webkit-scrollbar { width: 4px; }
+    .article-body::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 4px; }
+    .article-content { font-size: 14px; line-height: 1.9; color: var(--ink2); white-space: pre-wrap; word-break: break-word; }
+    .article-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line); }
+    .tag-chip { font-size: 11px; padding: 3px 10px; border-radius: 20px; background: var(--bg3); border: 1px solid var(--line); color: var(--ink2); }
+
+    /* Versions panel */
+    .ver-panel { border-top: 1px solid var(--line); padding: 14px 28px; max-height: 180px; overflow-y: auto; }
+    .ver-panel::-webkit-scrollbar { width: 4px; }
+    .ver-panel::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 4px; }
+    .ver-title { font-size: 11px; font-family: var(--mono); color: var(--ink3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+    .ver-item { display: flex; align-items: center; gap: 10px; padding: 5px 0; border-bottom: 1px solid var(--line); font-size: 12px; font-family: var(--mono); color: var(--ink2); }
+    .ver-item:last-child { border: none; }
+    .ver-num { color: var(--accent2); font-weight: 500; min-width: 30px; }
+
+    /* Editor */
+    .editor-view { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .editor-hdr { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--line); background: var(--bg2); }
+    .editor-title-text { font-size: 14px; font-weight: 600; flex: 1; }
+    .btn-save { font-size: 12px; font-weight: 600; font-family: var(--font); background: var(--green); color: #fff; border: none; border-radius: var(--radius); padding: 7px 18px; cursor: pointer; transition: opacity .15s; display: flex; align-items: center; gap: 6px; }
+    .btn-save:hover { opacity: .85; }
+    .btn-save:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-cancel { font-size: 12px; font-family: var(--font); background: var(--bg3); color: var(--ink2); border: 1px solid var(--line); border-radius: var(--radius); padding: 7px 14px; cursor: pointer; transition: all .15s; }
+    .btn-cancel:hover { border-color: var(--line2); color: var(--ink); }
+
+    .editor-form { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+    .editor-form::-webkit-scrollbar { width: 4px; }
+    .editor-form::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 4px; }
+    .form-row { display: flex; gap: 12px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; flex: 1; }
+    .form-label { font-size: 11px; font-family: var(--mono); color: var(--ink3); text-transform: uppercase; letter-spacing: 0.05em; }
+    .form-input, .form-select, .form-textarea { background: var(--bg3); border: 1px solid var(--line); border-radius: var(--radius); color: var(--ink); font-family: var(--font); font-size: 13px; padding: 9px 12px; transition: border-color .15s; outline: none; }
+    .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--accent); }
+    .form-select { cursor: pointer; }
+    .form-select option { background: var(--bg3); }
+    .form-textarea { resize: vertical; min-height: 220px; line-height: 1.7; }
+
+    /* Category badge colors */
+    .cat-sop     { background: var(--accent-bg);  color: var(--accent2); }
+    .cat-faq     { background: var(--green-bg);   color: var(--green);   }
+    .cat-policy  { background: var(--amber-bg);   color: var(--amber);   }
+    .cat-notice  { background: var(--red-bg);     color: var(--red);     }
+    .cat-other   { background: var(--purple-bg);  color: var(--purple);  }
+
+    /* Loading overlay */
+    .loading { position: fixed; inset: 0; background: rgba(15,17,23,0.8); display: flex; align-items: center; justify-content: center; z-index: 500; backdrop-filter: blur(4px); }
+    .loading-inner { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    .spinner { width: 32px; height: 32px; border: 3px solid var(--line); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { font-size: 13px; color: var(--ink2); font-family: var(--mono); }
+
+    /* Toast */
+    .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(10px); background: var(--bg2); border: 1px solid var(--line); color: var(--ink); font-size: 13px; padding: 10px 20px; border-radius: 30px; box-shadow: var(--shadow); opacity: 0; transition: all .25s; z-index: 999; white-space: nowrap; }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.success { border-color: var(--green); color: var(--green); }
+    .toast.error   { border-color: var(--red); color: var(--red); }
+
+    /* Count badge */
+    .sb-count { font-size: 10px; font-family: var(--mono); background: var(--bg3); color: var(--ink3); border: 1px solid var(--line); padding: 1px 7px; border-radius: 20px; margin-left: auto; }
+  </style>
+</head>
+<body>
+
+<!-- Loading -->
+<div class="loading" id="loadingOverlay">
+  <div class="loading-inner">
+    <div class="spinner"></div>
+    <div class="loading-text">連線資料庫中…</div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Header -->
+<header class="hdr">
+  <a href="../../home.html" class="hdr-back">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+    返回
+  </a>
+  <div class="hdr-title">📚 知識資料庫</div>
+  <div class="hdr-badge">Firestore</div>
+  <div class="hdr-status">
+    <div class="hdr-dot" id="connDot"></div>
+    <span id="connLabel">連線中…</span>
+  </div>
+</header>
+
+<!-- Layout -->
+<div class="layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sb-search">
+      <div class="sb-search-box">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input type="text" id="searchInput" placeholder="搜尋標題、內容、標籤…" oninput="handleSearch()"/>
+      </div>
+    </div>
+    <div class="sb-toolbar">
+      <button class="sb-new-btn" onclick="openEditor(null)">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        新增文章
+      </button>
+      <button class="sb-filter" id="filter-all"    onclick="setFilter('all')"   >全部</button>
+      <button class="sb-filter" id="filter-sop"    onclick="setFilter('sop')"   >SOP</button>
+      <button class="sb-filter" id="filter-faq"    onclick="setFilter('faq')"   >FAQ</button>
+      <button class="sb-filter" id="filter-policy" onclick="setFilter('policy')">規範</button>
+    </div>
+    <div class="sb-list" id="sbList">
+      <div class="sb-empty" id="sbEmpty" style="display:none">找不到相關文章</div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main" id="mainPanel">
+
+    <!-- Welcome -->
+    <div class="welcome" id="welcomePanel">
+      <div class="welcome-icon">📚</div>
+      <h2>知識資料庫</h2>
+      <p>集中管理客服 SOP、FAQ 與規範，全部即時儲存至 Firestore。</p>
+      <button class="welcome-btn" onclick="openEditor(null)">＋ 新增第一篇文章</button>
+    </div>
+
+    <!-- Article view -->
+    <div class="article-view" id="articlePanel" style="display:none">
+      <div class="article-hdr">
+        <div class="article-hdr-main">
+          <div class="article-cat-row">
+            <span class="sb-item-cat" id="viewCat"></span>
+            <span style="font-size:11px;font-family:var(--mono);color:var(--ink3)" id="viewVer"></span>
+          </div>
+          <div class="article-title" id="viewTitle"></div>
+          <div class="article-meta">
+            <span id="viewCreated"></span>
+            <span id="viewUpdated"></span>
+            <span id="viewAuthor"></span>
+          </div>
+        </div>
+        <div class="article-actions">
+          <button class="btn-icon" title="編輯" onclick="openEditor(currentDoc)">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+          <button class="btn-icon danger" title="刪除" onclick="deleteDoc(currentDoc)">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="article-body">
+        <div class="article-content" id="viewContent"></div>
+        <div class="article-tags" id="viewTags"></div>
+      </div>
+      <div class="ver-panel" id="verPanel">
+        <div class="ver-title">版本歷史</div>
+        <div id="verList"></div>
+      </div>
+    </div>
+
+    <!-- Editor -->
+    <div class="editor-view" id="editorPanel" style="display:none">
+      <div class="editor-hdr">
+        <div class="editor-title-text" id="editorTitle">新增文章</div>
+        <button class="btn-cancel" onclick="closeEditor()">取消</button>
+        <button class="btn-save" id="saveBtn" onclick="saveDoc()">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          儲存
+        </button>
+      </div>
+      <div class="editor-form">
+        <div class="form-row">
+          <div class="form-group" style="flex:2">
+            <label class="form-label">標題 *</label>
+            <input type="text" class="form-input" id="fTitle" placeholder="文章標題"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">分類 *</label>
+            <select class="form-select" id="fCat">
+              <option value="sop">SOP 作業程序</option>
+              <option value="faq">FAQ 常見問答</option>
+              <option value="policy">規範 / 規則</option>
+              <option value="notice">注意事項</option>
+              <option value="other">其他</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">關鍵字 / 標籤（逗號分隔）</label>
+          <input type="text" class="form-input" id="fTags" placeholder="例：退換貨, 物流異常, ETA"/>
+        </div>
+        <div class="form-group" style="flex:1">
+          <label class="form-label">內容 *</label>
+          <textarea class="form-textarea" id="fContent" placeholder="輸入文章內容…" style="flex:1;min-height:300px"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">編輯摘要（此版本修改說明）</label>
+          <input type="text" class="form-input" id="fSummary" placeholder="例：更新退換貨期限條件"/>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import {
+    getFirestore, collection, doc,
+    addDoc, setDoc, getDoc, getDocs, deleteDoc,
+    query, orderBy, onSnapshot, serverTimestamp, Timestamp
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  // ── Config ──────────────────────────────────────────────
+  const firebaseConfig = {
+    apiKey:            "AIzaSyBr1bq3WUhjjXH9rvKLgVa-DFK1vrg5QeM",
+    authDomain:        "opshub-knowledge.firebaseapp.com",
+    projectId:         "opshub-knowledge",
+    storageBucket:     "opshub-knowledge.firebasestorage.app",
+    messagingSenderId: "257794213641",
+    appId:             "1:257794213641:web:df105659dee73c393d75d8"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getFirestore(app);
+
+  // ── State ──────────────────────────────────────────────
+  let allDocs    = [];
+  let currentDoc = null;
+  let editingDoc = null;
+  let activeFilter = 'all';
+
+  // expose globals for inline handlers
+  window.currentDoc   = null;
+  window.handleSearch = handleSearch;
+  window.setFilter    = setFilter;
+  window.openEditor   = openEditor;
+  window.closeEditor  = closeEditor;
+  window.saveDoc      = saveDoc;
+  window.deleteDoc    = deleteDoc;
+
+  // ── Category helpers ──────────────────────────────────
+  const CAT = {
+    sop:    { label: 'SOP',  cls: 'cat-sop'    },
+    faq:    { label: 'FAQ',  cls: 'cat-faq'    },
+    policy: { label: '規範', cls: 'cat-policy' },
+    notice: { label: '注意', cls: 'cat-notice' },
+    other:  { label: '其他', cls: 'cat-other'  },
+  };
+  function catBadge(key) {
+    const c = CAT[key] || CAT.other;
+    return `<span class="sb-item-cat ${c.cls}">${c.label}</span>`;
+  }
+
+  // ── Toast ─────────────────────────────────────────────
+  function toast(msg, type='') {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = `toast show ${type}`;
+    setTimeout(() => el.className = 'toast', 2800);
+  }
+
+  // ── Format date ──────────────────────────────────────
+  function fmtDate(ts) {
+    if (!ts) return '';
+    const d = ts.toDate ? ts.toDate() : new Date(ts);
+    return d.toLocaleDateString('zh-TW') + ' ' + d.toLocaleTimeString('zh-TW', { hour:'2-digit', minute:'2-digit' });
+  }
+
+  // ── Load all docs (realtime) ──────────────────────────
+  function init() {
+    const q = query(collection(db, 'knowledge'), orderBy('updatedAt', 'desc'));
+    onSnapshot(q, snap => {
+      allDocs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderList();
+      document.getElementById('loadingOverlay').style.display = 'none';
+      document.getElementById('connDot').classList.remove('offline');
+      document.getElementById('connLabel').textContent = `${allDocs.length} 篇`;
+    }, err => {
+      console.error(err);
+      document.getElementById('connDot').classList.add('offline');
+      document.getElementById('connLabel').textContent = '連線失敗';
+      document.getElementById('loadingOverlay').style.display = 'none';
+      toast('資料庫連線失敗：' + err.message, 'error');
+    });
+  }
+
+  // ── Render list ───────────────────────────────────────
+  function renderList() {
+    const q     = document.getElementById('searchInput').value.toLowerCase().trim();
+    const items = allDocs.filter(d => {
+      const matchFilter = activeFilter === 'all' || d.category === activeFilter;
+      if (!matchFilter) return false;
+      if (!q) return true;
+      return (d.title||'').toLowerCase().includes(q)
+          || (d.content||'').toLowerCase().includes(q)
+          || (d.tags||[]).some(t => t.toLowerCase().includes(q));
+    });
+
+    const list  = document.getElementById('sbList');
+    const empty = document.getElementById('sbEmpty');
+
+    // remove old items
+    list.querySelectorAll('.sb-item').forEach(e => e.remove());
+    empty.style.display = items.length === 0 ? '' : 'none';
+
+    items.forEach(doc => {
+      const el = document.createElement('div');
+      el.className = 'sb-item' + (currentDoc?.id === doc.id ? ' active' : '');
+      el.dataset.id = doc.id;
+      el.onclick = () => viewDoc(doc);
+      el.innerHTML = `
+        <div class="sb-item-title">${esc(doc.title || '（無標題）')}</div>
+        <div class="sb-item-meta">
+          ${catBadge(doc.category)}
+          <span>${fmtDate(doc.updatedAt)}</span>
+          <span class="sb-count">v${doc.version||1}</span>
+        </div>
+        <div class="sb-item-snippet">${esc((doc.content||'').slice(0,60))}…</div>
+      `;
+      list.appendChild(el);
+    });
+
+    // Update all filter buttons count
+    document.querySelector('.sb-toolbar').querySelectorAll('.sb-filter').forEach(btn => {
+      const f = btn.id.replace('filter-','');
+      btn.classList.toggle('active', f === activeFilter);
+    });
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // ── View doc ─────────────────────────────────────────
+  async function viewDoc(doc) {
+    currentDoc = doc;
+    window.currentDoc = doc;
+
+    // sidebar highlight
+    document.querySelectorAll('.sb-item').forEach(el => {
+      el.classList.toggle('active', el.dataset.id === doc.id);
+    });
+
+    // populate view
+    document.getElementById('viewCat').className = `sb-item-cat ${CAT[doc.category]?.cls||'cat-other'}`;
+    document.getElementById('viewCat').textContent = CAT[doc.category]?.label || '其他';
+    document.getElementById('viewVer').textContent = `v${doc.version||1}`;
+    document.getElementById('viewTitle').textContent = doc.title || '';
+    document.getElementById('viewContent').textContent = doc.content || '';
+    document.getElementById('viewCreated').textContent = '建立：' + fmtDate(doc.createdAt);
+    document.getElementById('viewUpdated').textContent = '更新：' + fmtDate(doc.updatedAt);
+    document.getElementById('viewAuthor').textContent  = doc.author ? '作者：' + doc.author : '';
+
+    // tags
+    const tagsEl = document.getElementById('viewTags');
+    tagsEl.innerHTML = (doc.tags||[]).map(t => `<span class="tag-chip">${esc(t)}</span>`).join('');
+
+    // version history
+    try {
+      const verSnap = await getDocs(
+        query(collection(db, 'knowledge', doc.id, 'versions'), orderBy('savedAt', 'desc'))
+      );
+      const verList = document.getElementById('verList');
+      verList.innerHTML = '';
+      verSnap.docs.forEach(v => {
+        const vd = v.data();
+        const el = document.createElement('div');
+        el.className = 'ver-item';
+        el.innerHTML = `
+          <span class="ver-num">v${vd.version}</span>
+          <span>${esc(vd.title||'')}</span>
+          <span style="margin-left:auto;color:var(--ink3)">${fmtDate(vd.savedAt)}</span>
+          ${vd.summary ? `<span style="color:var(--ink3)">— ${esc(vd.summary)}</span>` : ''}
+        `;
+        verList.appendChild(el);
+      });
+      if (verSnap.empty) verList.innerHTML = '<div style="font-size:12px;color:var(--ink3);font-family:var(--mono)">尚無歷史版本</div>';
+    } catch(e) {}
+
+    show('article');
+  }
+
+  // ── Editor ───────────────────────────────────────────
+  function openEditor(doc) {
+    editingDoc = doc;
+    document.getElementById('editorTitle').textContent = doc ? '編輯文章' : '新增文章';
+    document.getElementById('fTitle').value   = doc?.title   || '';
+    document.getElementById('fCat').value     = doc?.category|| 'sop';
+    document.getElementById('fTags').value    = (doc?.tags||[]).join(', ');
+    document.getElementById('fContent').value = doc?.content || '';
+    document.getElementById('fSummary').value = '';
+    show('editor');
+  }
+
+  function closeEditor() {
+    if (currentDoc) show('article');
+    else            show('welcome');
+  }
+
+  async function saveDoc() {
+    const title   = document.getElementById('fTitle').value.trim();
+    const content = document.getElementById('fContent').value.trim();
+    const cat     = document.getElementById('fCat').value;
+    const tags    = document.getElementById('fTags').value.split(',').map(t=>t.trim()).filter(Boolean);
+    const summary = document.getElementById('fSummary').value.trim();
+
+    if (!title || !content) { toast('請填寫標題與內容', 'error'); return; }
+
+    const btn = document.getElementById('saveBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner" style="width:14px;height:14px;border-width:2px"></div> 儲存中…';
+
+    try {
+      if (editingDoc) {
+        // Save current as version snapshot
+        const newVer = (editingDoc.version||1) + 1;
+        await addDoc(collection(db, 'knowledge', editingDoc.id, 'versions'), {
+          version: editingDoc.version||1,
+          title:   editingDoc.title,
+          content: editingDoc.content,
+          category: editingDoc.category,
+          tags:    editingDoc.tags||[],
+          savedAt: serverTimestamp(),
+          summary: summary||'（無描述）'
+        });
+        await setDoc(doc(db, 'knowledge', editingDoc.id), {
+          title, content, category: cat, tags,
+          version:   newVer,
+          updatedAt: serverTimestamp(),
+          createdAt: editingDoc.createdAt,
+          author:    editingDoc.author||'客服人員'
+        });
+        toast('✓ 文章已更新', 'success');
+      } else {
+        const ref = await addDoc(collection(db, 'knowledge'), {
+          title, content, category: cat, tags,
+          version:   1,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          author:    '客服人員'
+        });
+        // auto-open new doc
+        const snap = await getDoc(ref);
+        viewDoc({ id: snap.id, ...snap.data() });
+        toast('✓ 文章已新增', 'success');
+      }
+    } catch(e) {
+      toast('儲存失敗：' + e.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> 儲存';
+    }
+  }
+
+  // ── Delete ───────────────────────────────────────────
+  async function deleteDoc(d) {
+    if (!d) return;
+    if (!confirm(`確定刪除「${d.title}」？此操作無法還原。`)) return;
+    try {
+      await deleteDoc(doc(db, 'knowledge', d.id));
+      currentDoc = null;
+      window.currentDoc = null;
+      show('welcome');
+      toast('文章已刪除');
+    } catch(e) {
+      toast('刪除失敗：' + e.message, 'error');
+    }
+  }
+
+  // ── Filter / Search ───────────────────────────────────
+  function setFilter(f) {
+    activeFilter = f;
+    renderList();
+  }
+  function handleSearch() { renderList(); }
+
+  // ── Panel switch ──────────────────────────────────────
+  function show(panel) {
+    document.getElementById('welcomePanel').style.display = panel === 'welcome' ? '' : 'none';
+    document.getElementById('articlePanel').style.display = panel === 'article' ? '' : 'none';
+    document.getElementById('editorPanel').style.display  = panel === 'editor'  ? '' : 'none';
+  }
+
+  // ── Boot ─────────────────────────────────────────────
+  init();
+</script>
+</body>
+</html>
