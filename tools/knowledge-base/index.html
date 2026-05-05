@@ -48,6 +48,9 @@
     .hdr-status { font-size: 11px; font-family: var(--mono); color: var(--ink3); display: flex; align-items: center; gap: 5px; }
     .hdr-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
     .hdr-dot.offline { background: var(--red); }
+    .hdr-user { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ink2); border-left: 1px solid var(--line); padding-left: 14px; margin-left: 4px; }
+    .hdr-user-name { font-weight: 500; color: var(--ink); }
+    .hdr-user-avatar { width: 26px; height: 26px; border-radius: 50%; background: var(--accent-bg); color: var(--accent2); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
 
     /* ── Layout ── */
     .layout { display: grid; grid-template-columns: 240px 1fr; flex: 1; height: calc(100vh - 56px); overflow: hidden; }
@@ -126,9 +129,14 @@
     .ver-panel::-webkit-scrollbar { width: 4px; }
     .ver-panel::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 4px; }
     .ver-title { font-size: 11px; font-family: var(--mono); color: var(--ink3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
-    .ver-item { display: flex; align-items: center; gap: 10px; padding: 5px 0; border-bottom: 1px solid var(--line); font-size: 12px; font-family: var(--mono); color: var(--ink2); }
+    .ver-item { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 12px; font-family: var(--mono); color: var(--ink2); flex-wrap: wrap; }
     .ver-item:last-child { border: none; }
     .ver-num { color: var(--accent2); font-weight: 500; min-width: 30px; }
+    .ver-operator { display: inline-flex; align-items: center; gap: 4px; background: var(--accent-bg); color: var(--accent2); font-size: 10px; padding: 1px 7px; border-radius: 10px; font-family: var(--font); }
+    .ver-action { font-size: 10px; padding: 1px 7px; border-radius: 10px; font-family: var(--font); }
+    .ver-action-edit   { background: #fffbeb; color: #92400e; }
+    .ver-action-create { background: #ecfdf5; color: #065f46; }
+    .ver-action-delete { background: #fef2f2; color: #991b1b; }
 
     /* Editor */
     .editor-view { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
@@ -178,6 +186,14 @@
 </head>
 <body>
 
+<!-- Auth guard -->
+<script src="../../auth.js"></script>
+<script>
+  const _kbSession = AUTH.guard(null, '../../login.html');
+  const _kbUser = _kbSession ? (_kbSession.displayName || _kbSession.username) : '未知帳號';
+  const _kbUsername = _kbSession ? _kbSession.username : '';
+</script>
+
 <!-- Loading -->
 <div class="loading" id="loadingOverlay">
   <div class="loading-inner">
@@ -201,6 +217,7 @@
     <div class="hdr-dot" id="connDot"></div>
     <span id="connLabel">連線中…</span>
   </div>
+  <div class="hdr-user" id="hdrUser"></div>
 </header>
 
 <!-- Layout -->
@@ -278,6 +295,7 @@
             <span id="viewCreated"></span>
             <span id="viewUpdated"></span>
             <span id="viewAuthor"></span>
+            <span id="viewLastEditor"></span>
           </div>
         </div>
         <div class="article-actions">
@@ -486,7 +504,10 @@
     document.getElementById('viewContent').textContent = d.content || '';
     document.getElementById('viewCreated').textContent = '建立：' + fmtDate(d.createdAt);
     document.getElementById('viewUpdated').textContent = '更新：' + fmtDate(d.updatedAt);
-    document.getElementById('viewAuthor').textContent  = d.author ? '作者：' + d.author : '';
+    document.getElementById('viewAuthor').textContent  = d.author ? '建立：' + d.author : '';
+    document.getElementById('viewLastEditor').innerHTML = d.lastEditedBy
+      ? `<span style="display:inline-flex;align-items:center;gap:4px;background:var(--accent-bg);color:var(--accent2);padding:1px 8px;border-radius:10px;font-size:10px;">✏️ 最後編輯：${d.lastEditedBy}</span>`
+      : '';
 
     const tagsEl = document.getElementById('viewTags');
     tagsEl.innerHTML = (d.tags||[]).map(t => `<span class="tag-chip">${esc(t)}</span>`).join('');
@@ -502,11 +523,15 @@
           const vd = v.data();
           const el = document.createElement('div');
           el.className = 'ver-item';
+          const actionCls = vd.action === 'create' ? 'ver-action-create' : 'ver-action-edit';
+          const actionLabel = vd.action === 'create' ? '新增' : '編輯';
           el.innerHTML = `
             <span class="ver-num">v${vd.version}</span>
             <span>${esc(vd.title||'')}</span>
+            ${vd.operator ? `<span class="ver-operator">👤 ${esc(vd.operator)}</span>` : ''}
+            <span class="ver-action ${actionCls}">${actionLabel}</span>
             <span style="margin-left:auto;color:var(--ink3)">${fmtDate(vd.savedAt)}</span>
-            ${vd.summary ? `<span style="color:var(--ink3)">— ${esc(vd.summary)}</span>` : ''}
+            ${vd.summary ? `<span style="color:var(--ink3);font-size:11px">— ${esc(vd.summary)}</span>` : ''}
           `;
           verList.appendChild(el);
         });
@@ -549,30 +574,38 @@
       if (editingDoc) {
         const newVer = (editingDoc.version||1) + 1;
         await db.collection('knowledge').doc(editingDoc.id).collection('versions').add({
-          version:  editingDoc.version||1,
-          title:    editingDoc.title,
-          content:  editingDoc.content,
-          category: editingDoc.category,
-          tags:     editingDoc.tags||[],
-          savedAt:  firebase.firestore.FieldValue.serverTimestamp(),
-          summary:  summary||'（無描述）'
+          version:   editingDoc.version||1,
+          title:     editingDoc.title,
+          content:   editingDoc.content,
+          category:  editingDoc.category,
+          tags:      editingDoc.tags||[],
+          savedAt:   firebase.firestore.FieldValue.serverTimestamp(),
+          summary:   summary||'（無描述）',
+          operator:  _kbUser,
+          username:  _kbUsername,
+          action:    'edit'
         });
         await db.collection('knowledge').doc(editingDoc.id).set({
           title, content, category: cat, tags,
-          version:   newVer,
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-          createdAt: editingDoc.createdAt,
-          author:    editingDoc.author||'客服人員'
+          version:        newVer,
+          updatedAt:      firebase.firestore.FieldValue.serverTimestamp(),
+          createdAt:      editingDoc.createdAt,
+          author:         editingDoc.author || _kbUser,
+          lastEditedBy:   _kbUser,
+          lastEditedUser: _kbUsername
         });
         toast('✓ 文章已更新', 'success');
         show('article');
       } else {
         const ref = await db.collection('knowledge').add({
           title, content, category: cat, tags,
-          version:   1,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-          author:    '客服人員'
+          version:        1,
+          createdAt:      firebase.firestore.FieldValue.serverTimestamp(),
+          updatedAt:      firebase.firestore.FieldValue.serverTimestamp(),
+          author:         _kbUser,
+          authorUsername: _kbUsername,
+          lastEditedBy:   _kbUser,
+          lastEditedUser: _kbUsername
         });
         toast('✓ 文章已新增', 'success');
         // wait for realtime update to populate allDocs, then view
@@ -594,6 +627,15 @@
     if (!d) return;
     if (!confirm(`確定刪除「${d.title}」？此操作無法還原。`)) return;
     try {
+      // 刪除前寫入 audit log
+      await db.collection('audit_log').add({
+        action:    'delete',
+        docId:     d.id,
+        title:     d.title,
+        operator:  _kbUser,
+        username:  _kbUsername,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      });
       await db.collection('knowledge').doc(d.id).delete();
       currentDoc = null;
       show('welcome');
@@ -615,6 +657,17 @@
     document.getElementById('articlePanel').style.display = panel === 'article' ? '' : 'none';
     document.getElementById('editorPanel').style.display  = panel === 'editor'  ? '' : 'none';
   }
+
+  // 顯示 header 帳號資訊
+  (function renderUser() {
+    const el = document.getElementById('hdrUser');
+    if (!el) return;
+    const initials = _kbUser ? _kbUser.slice(0,1).toUpperCase() : '?';
+    el.innerHTML = `
+      <div class="hdr-user-avatar">${initials}</div>
+      <span class="hdr-user-name">${_kbUser}</span>
+    `;
+  })();
 
   init();
 </script>
