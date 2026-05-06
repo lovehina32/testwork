@@ -699,7 +699,11 @@
   function setFilter(cat,sub){
     activeFilter={cat,sub};
     if(cat!=='all'&&cat!=='home') expandedCats.add(cat);
+    currentDoc=null;
+    document.querySelectorAll('.sb-item').forEach(el=>el.classList.remove('active'));
     renderTree(); renderList();
+    // 切回主畫面讓使用者看到篩選後的列表
+    show('welcome', true);
   }
 
   function handleSearch(){ renderList(); }
@@ -838,11 +842,11 @@
   }
 
   // ── Panels ─────────────────────────────────────────────────
-  function show(panel){
+  function show(panel, skipActivity){
     document.getElementById('welcomePanel').style.display=panel==='welcome'?'':'none';
     document.getElementById('articlePanel').style.display=panel==='article'?'':'none';
     document.getElementById('editorPanel').style.display =panel==='editor' ?'':'none';
-    if(panel==='welcome') loadRecentActivity();
+    if(panel==='welcome' && !skipActivity) loadRecentActivity();
   }
 
   function showHome(){
