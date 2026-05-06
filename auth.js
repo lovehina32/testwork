@@ -41,7 +41,7 @@ const AUTH = (function () {
   }
 
   // ── 後端 API 端點 ─────────────────────────────────────────
-  const API_BASE = 'https://rz-scheduler-v2-587734217935.asia-east1.run.app';
+  const API_BASE = 'https://rz-scheduler-v2-471942519278.asia-east1.run.app';
 
   // ── 本地帳號驗證（後端連不到時的 fallback）───────────────
   function localLogin(username, password) {

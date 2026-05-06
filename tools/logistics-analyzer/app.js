@@ -640,7 +640,7 @@ async function generateMonthlyHighlights(mr) {
   const badgeEl = document.querySelector('#monthly-highlights .badge');
   if (!el) return;
 
-  const GEMINI_URL = 'https://rz-scheduler-v2-587734217935.asia-east1.run.app/api/gemini';
+  const GEMINI_URL = 'https://rz-scheduler-v2-471942519278.asia-east1.run.app/api/gemini';
 
   try {
     const total = mr.total || 1;

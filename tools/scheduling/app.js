@@ -7,8 +7,8 @@
 ══════════════════════════════════════════════════════ */
 
 // ── GCP API 端點 ─────────────────────────────────────────
-const API_URL    = 'https://rz-scheduler-v2-587734217935.asia-east1.run.app/api/schedule';
-const HEALTH_URL = 'https://rz-scheduler-v2-587734217935.asia-east1.run.app/health';
+const API_URL    = 'https://rz-scheduler-v2-471942519278.asia-east1.run.app/api/schedule';
+const HEALTH_URL = 'https://rz-scheduler-v2-471942519278.asia-east1.run.app/health';
 
 // 第一次無回應超過此毫秒數時自動重試
 const FIRST_ATTEMPT_TIMEOUT_MS = 120000; // 120 秒
