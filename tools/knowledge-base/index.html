@@ -511,6 +511,48 @@
     renderTree(); syncCatOptions(); renderList(); toast('小分類已刪除');
   }
 
+
+  // ── Tree 事件委派（只綁一次，DOM 重建也不會失效）─────────────
+  function initTreeEvents(){
+    const tree = document.getElementById('sbTree');
+    tree.addEventListener('click', e=>{
+      const btn = e.target.closest('button');
+      if(!btn) return;
+
+      // 展開/收合 & 篩選大分類
+      if(btn.dataset.catToggle){
+        e.stopPropagation();
+        handleCatClick(e, btn.dataset.catToggle);
+        return;
+      }
+      // 新增小分類
+      if(btn.dataset.addSub){
+        e.stopPropagation();
+        const catObj = categories.find(c=>c.id===btn.dataset.addSub);
+        if(catObj) openModal('新增小分類 — '+catObj.label,'例：玩具相關',v=>addSubCategory(catObj.id,v));
+        return;
+      }
+      // 刪除小分類（data-del-sub 優先於 data-del-cat）
+      if(btn.dataset.delSub){
+        e.stopPropagation();
+        deleteSubCategory(btn.dataset.delCat, btn.dataset.delSub);
+        return;
+      }
+      // 刪除大分類
+      if(btn.dataset.delCat){
+        e.stopPropagation();
+        deleteCategory(btn.dataset.delCat);
+        return;
+      }
+      // 小分類篩選
+      if(btn.dataset.sub){
+        e.stopPropagation();
+        setFilter(btn.dataset.cat, btn.dataset.sub);
+        return;
+      }
+    });
+  }
+
   // ── Render tree ────────────────────────────────────────────
   function renderTree(){
     const tree=document.getElementById('sbTree');
@@ -589,29 +631,6 @@
             <button class="subcat-add-link" data-add-sub="${cat.id}">＋ 新增小分類</button>
           </li>
         </ul>`;
-
-      // 綁定事件（避免 onclick 字串拼接問題）
-      li.querySelector(`[data-cat-toggle="${cat.id}"]`).addEventListener('click', e=>handleCatClick(e, cat.id));
-      li.querySelectorAll(`[data-add-sub]`).forEach(btn=>{
-        const cid = btn.dataset.addSub;
-        const catObj = categories.find(c=>c.id===cid);
-        if(!catObj) return;
-        btn.addEventListener('click', e=>{
-          e.stopPropagation();
-          openModal('新增小分類 — '+catObj.label,'例：玩具相關',v=>addSubCategory(catObj.id,v));
-        });
-      });
-      // 刪除大分類
-      const delCatBtn = li.querySelector(`.cat-row-actions [data-del-cat]`);
-      if(delCatBtn) delCatBtn.addEventListener('click', e=>{ e.stopPropagation(); deleteCategory(cat.id); });
-      // 刪除小分類
-      li.querySelectorAll('[data-del-sub]').forEach(btn=>
-        btn.addEventListener('click', e=>{ e.stopPropagation(); deleteSubCategory(btn.dataset.delCat, btn.dataset.delSub); })
-      );
-      // 小分類篩選
-      li.querySelectorAll('[data-sub]').forEach(btn=>
-        btn.addEventListener('click', e=>{ e.stopPropagation(); setFilter(btn.dataset.cat, btn.dataset.sub); })
-      );
 
       tree.appendChild(li);
     });
@@ -871,6 +890,8 @@
   async function init(){
     const uel=document.getElementById('hdrUser');
     if(uel){ const i=_kbUser?_kbUser.slice(0,1).toUpperCase():'?'; uel.innerHTML=`<div class="hdr-user-avatar">${i}</div><span class="hdr-user-name">${_kbUser}</span>`; }
+
+    initTreeEvents(); // 事件委派，只綁一次
 
     await initCategories();
 
