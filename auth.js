@@ -3,62 +3,94 @@
 
 const AUTH = (function () {
   const SESSION_KEY = 'rz_session';
-  const USERS_KEY   = 'rz_users';
   const SESSION_TTL = 8 * 60 * 60 * 1000; // 8 小時
 
-  // ── 預設帳號（首次載入寫入 localStorage）─────────────────
-  const DEFAULT_USERS = [
-    {
-      username: 'admin',
-      password: 'admin',
-      role: 'admin',          // 'admin' | 'user'
-      displayName: '系統管理員',
-      enabled: true,
-      tools: {                // 工具開關（僅 user 角色有效，admin 全開）
-        logistics: true,
-        claims: true,
-        dailyReport: true
-      }
-    }
-  ];
+  // ── Firebase 設定（與知識庫共用同一專案）────────────────
+  const FB_CONFIG = {
+    apiKey:            "AIzaSyBr1bq3WUhjjXH9rvKLgVa-DFK1vrg5QeM",
+    authDomain:        "opshub-knowledge.firebaseapp.com",
+    projectId:         "opshub-knowledge",
+    storageBucket:     "opshub-knowledge.firebasestorage.app",
+    messagingSenderId: "257794213641",
+    appId:             "1:257794213641:web:df105659dee73c393d75d8"
+  };
 
-  // ── 初始化：若 localStorage 無帳號資料則寫入預設值 ────────
-  function init() {
-    if (!localStorage.getItem(USERS_KEY)) {
-      localStorage.setItem(USERS_KEY, JSON.stringify(DEFAULT_USERS));
-    }
-  }
-
-  // ── 讀取所有帳號 ──────────────────────────────────────────
-  function getUsers() {
-    try { return JSON.parse(localStorage.getItem(USERS_KEY)) || []; }
-    catch { return []; }
-  }
-
-  // ── 寫入帳號列表 ──────────────────────────────────────────
-  function saveUsers(users) {
-    localStorage.setItem(USERS_KEY, JSON.stringify(users));
+  // ── 初始化 Firebase（若尚未初始化）──────────────────────
+  function getDb() {
+    if (!window.firebase) return null;
+    if (!firebase.apps.length) firebase.initializeApp(FB_CONFIG);
+    return firebase.firestore();
   }
 
   // ── 後端 API 端點 ─────────────────────────────────────────
   const API_BASE = 'https://rz-scheduler-v2-587734217935.asia-east1.run.app';
 
-  // ── 本地帳號驗證（後端連不到時的 fallback）───────────────
-  function localLogin(username, password) {
-    const users = getUsers();
+  // ── 預設帳號（Firestore 空白時寫入）─────────────────────
+  const DEFAULT_USERS = [
+    {
+      username:    'admin',
+      password:    'admin',
+      role:        'admin',
+      displayName: '系統管理員',
+      enabled:     true,
+      tools: { logistics: true, claims: true, dailyReport: true, knowledge: true }
+    }
+  ];
+
+  // ── 從 Firestore 讀取所有帳號 ─────────────────────────────
+  async function getUsers() {
+    const db = getDb();
+    if (!db) return getLocalUsers();
+    try {
+      const snap = await db.collection('users').orderBy('createdAt').get();
+      if (snap.empty) {
+        // 首次：寫入預設帳號
+        await initDefaultUsers(db);
+        return DEFAULT_USERS;
+      }
+      return snap.docs.map(d => ({ ...d.data() }));
+    } catch (e) {
+      console.warn('Firestore 讀取失敗，fallback localStorage', e);
+      return getLocalUsers();
+    }
+  }
+
+  async function initDefaultUsers(db) {
+    const batch = db.batch();
+    DEFAULT_USERS.forEach(u => {
+      batch.set(db.collection('users').doc(u.username), {
+        ...u, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    });
+    await batch.commit();
+  }
+
+  // ── localStorage fallback ─────────────────────────────────
+  function getLocalUsers() {
+    try { return JSON.parse(localStorage.getItem('rz_users')) || DEFAULT_USERS; }
+    catch { return DEFAULT_USERS; }
+  }
+
+  // ── 本地帳號驗證 ──────────────────────────────────────────
+  async function localLogin(username, password) {
+    const users = await getUsers();
     const user  = users.find(u => u.username === username && u.password === password);
-    if (!user)         return { ok: false, reason: '帳號或密碼錯誤' };
-    if (!user.enabled) return { ok: false, reason: '此帳號已停用，請聯絡管理員' };
-    const session = { username: user.username, role: user.role, displayName: user.displayName, ts: Date.now() };
+    if (!user)          return { ok: false, reason: '帳號或密碼錯誤' };
+    if (!user.enabled)  return { ok: false, reason: '此帳號已停用，請聯絡管理員' };
+    const session = {
+      username: user.username, role: user.role,
+      displayName: user.displayName, ts: Date.now(),
+      tools: user.tools || {}
+    };
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
     return { ok: true, session };
   }
 
-  // ── 登入驗證（優先打後端日翊驗證，失敗則 fallback 本地帳號）──
+  // ── 登入驗證 ──────────────────────────────────────────────
   async function login(username, password) {
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 5000); // 5 秒 timeout
+      const timeout = setTimeout(() => controller.abort(), 5000);
       const resp = await fetch(`${API_BASE}/api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -72,34 +104,26 @@ const AUTH = (function () {
       if (resp.status === 400) return { ok: false, reason: '請輸入帳號與密碼' };
 
       const code = String(data.MSG || '').split(' ')[0];
-      const errorMessages = {
-        '100': '帳號或密碼錯誤',
-        '200': 'AD 認證錯誤，請確認密碼是否正確',
-        '998': '系統暫時無法使用，請稍後再試',
-        '999': '系統發生錯誤，請聯絡管理員'
-      };
+      if (code !== '000') return localLogin(username, password);
 
-      if (code !== '000') {
-        // 日翊驗證失敗 → fallback 本地帳號
-        return localLogin(username, password);
-      }
-
+      // 日翊帳號驗證成功，從 Firestore 查詢工具權限
+      const users = await getUsers();
+      const user  = users.find(u => u.username === username);
       const session = {
-        username: username,
-        role: username === 'admin' ? 'admin' : 'user',
-        displayName: username,
-        ts: Date.now()
+        username, ts: Date.now(),
+        role:        user ? user.role        : 'user',
+        displayName: user ? user.displayName : username,
+        tools:       user ? (user.tools||{}) : {}
       };
       sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
       return { ok: true, session };
 
     } catch (e) {
-      // 後端連不到（網路錯誤或 timeout）→ fallback 本地帳號
       return localLogin(username, password);
     }
   }
 
-  // ── 取得目前 Session ──────────────────────────────────────
+  // ── Session ───────────────────────────────────────────────
   function getSession() {
     try {
       const s = JSON.parse(sessionStorage.getItem(SESSION_KEY));
@@ -108,67 +132,64 @@ const AUTH = (function () {
     } catch { return null; }
   }
 
-  // ── 登出 ──────────────────────────────────────────────────
-  function logout() {
-    sessionStorage.removeItem(SESSION_KEY);
-  }
+  function logout() { sessionStorage.removeItem(SESSION_KEY); }
 
-  // ── 驗證守衛（需在每頁呼叫）─────────────────────────────
   function guard(requiredRole, loginPath) {
-    const s = getSession();
+    const s  = getSession();
     const lp = loginPath || 'login.html';
     if (!s) { window.location.replace(lp); return null; }
     if (requiredRole === 'admin' && s.role !== 'admin') {
-      window.location.replace('home.html');
-      return null;
+      window.location.replace('home.html'); return null;
     }
     return s;
   }
 
-  // ── 取得某使用者的工具權限 ────────────────────────────────
-  function getUserTools(username) {
-    const users = getUsers();
+  // ── 工具權限 ──────────────────────────────────────────────
+  async function getUserTools(username) {
+    const users = await getUsers();
     const user  = users.find(u => u.username === username);
-    if (!user) return { logistics: false, claims: false };
-    if (user.role === 'admin') return { logistics: true, claims: true, dailyReport: true };
-    return user.tools || { logistics: true, claims: true, dailyReport: true };
+    if (!user) return { logistics: false, claims: false, dailyReport: false, knowledge: false };
+    if (user.role === 'admin') return { logistics: true, claims: true, dailyReport: true, knowledge: true };
+    return user.tools || { logistics: true, claims: true, dailyReport: true, knowledge: true };
   }
 
   // ── 新增帳號 ──────────────────────────────────────────────
-  function addUser(data) {
-    const users = getUsers();
+  async function addUser(data) {
+    const db = getDb();
+    if (!db) return { ok: false, reason: 'Firestore 未載入' };
+    const users = await getUsers();
     if (users.find(u => u.username === data.username)) return { ok: false, reason: '帳號名稱已存在' };
-    users.push({
+    const newUser = {
       username:    data.username,
       password:    data.password,
       role:        data.role || 'user',
       displayName: data.displayName || data.username,
       enabled:     true,
-      tools:       data.tools || { logistics: true, claims: true, dailyReport: true }
-    });
-    saveUsers(users);
+      tools:       data.tools || { logistics: true, claims: true, dailyReport: true, knowledge: true },
+      createdAt:   firebase.firestore.FieldValue.serverTimestamp()
+    };
+    await db.collection('users').doc(data.username).set(newUser);
     return { ok: true };
   }
 
-  // ── 更新帳號（啟用/停用、工具開關、密碼）────────────────
-  function updateUser(username, patch) {
-    const users = getUsers();
-    const idx   = users.findIndex(u => u.username === username);
-    if (idx === -1) return { ok: false, reason: '找不到帳號' };
-    if (username === 'admin' && patch.role && patch.role !== 'admin') return { ok: false, reason: '管理員角色無法變更' };
-    users[idx] = { ...users[idx], ...patch };
-    saveUsers(users);
+  // ── 更新帳號 ──────────────────────────────────────────────
+  async function updateUser(username, patch) {
+    const db = getDb();
+    if (!db) return { ok: false, reason: 'Firestore 未載入' };
+    if (username === 'admin' && patch.role && patch.role !== 'admin')
+      return { ok: false, reason: '管理員角色無法變更' };
+    await db.collection('users').doc(username).update(patch);
     return { ok: true };
   }
 
   // ── 刪除帳號 ──────────────────────────────────────────────
-  function deleteUser(username) {
+  async function deleteUser(username) {
     if (username === 'admin') return { ok: false, reason: '無法刪除管理員帳號' };
-    const users = getUsers().filter(u => u.username !== username);
-    saveUsers(users);
+    const db = getDb();
+    if (!db) return { ok: false, reason: 'Firestore 未載入' };
+    await db.collection('users').doc(username).delete();
     return { ok: true };
   }
 
-  init();
   return { login, logout, getSession, guard, getUsers, addUser, updateUser, deleteUser, getUserTools };
 })();
