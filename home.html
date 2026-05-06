@@ -304,7 +304,7 @@
 
       // 顯示/隱藏卡片
       function showCard(card, toolKey, group) {
-        const inTab = (tab === 'all' || tab === group);
+        const inTab = (tab === 'all' || tab === group || group === 'all');
         const hasPerm = (s && s.role === 'admin') || tools[toolKey];
         card.style.display = (inTab && hasPerm) ? '' : 'none';
       }
@@ -322,12 +322,11 @@
         cardSched.style.display = (tab === 'all' && hasSched) ? '' : 'none';
       }
 
-      // 空狀態
-      const cardSched2 = document.getElementById('card-scheduling');
-      const cardDR2    = document.getElementById('card-daily-report');
-      const visible = [cardLogistics, cardClaims, cardSched2, cardDR2].filter(c => c && c.style.display !== 'none');
-      emptyState.style.display    = visible.length === 0 ? 'block' : 'none';
-      howSection.style.display    = tab === 'all' ? '' : 'none';
+      // 空狀態（檢查所有卡片）
+      const allCards = [cardLogistics, cardClaims, cardSched, cardDailyReport, cardKnowledge].filter(Boolean);
+      const visible  = allCards.filter(c => c.style.display !== 'none');
+      emptyState.style.display = visible.length === 0 ? 'block' : 'none';
+      howSection.style.display = tab === 'all' ? '' : 'none';
     })();
 
     // Card hover tilt
