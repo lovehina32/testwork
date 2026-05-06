@@ -169,6 +169,21 @@
     .form-select{cursor:pointer}
     .form-select option{background:var(--bg3)}
     .form-textarea{resize:vertical;min-height:220px;line-height:1.7}
+    /* Rich Text Editor */
+    .rte-wrap{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:#fff}
+    .rte-wrap:focus-within{border-color:var(--accent)}
+    .rte-toolbar{display:flex;align-items:center;gap:2px;padding:6px 8px;border-bottom:1px solid var(--line);background:var(--bg3);flex-wrap:wrap}
+    .rte-btn{display:inline-flex;align-items:center;gap:4px;background:none;border:1px solid transparent;border-radius:5px;padding:4px 7px;font-size:12px;font-family:var(--font);cursor:pointer;color:var(--ink2);transition:background .12s,border-color .12s;white-space:nowrap}
+    .rte-btn:hover{background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
+    .rte-color-btn{position:relative;cursor:pointer}
+    .rte-divider{width:1px;height:18px;background:var(--line);margin:0 4px}
+    .rte-editor{min-height:280px;padding:12px 14px;font-size:13px;line-height:1.8;color:var(--ink);outline:none;overflow-y:auto}
+    .rte-editor:empty:before{content:attr(data-placeholder);color:var(--ink3);pointer-events:none}
+    /* 編輯器內表格樣式 */
+    .rte-editor table,.article-content table{border-collapse:collapse;width:100%;margin:10px 0;font-size:13px}
+    .rte-editor th,.rte-editor td,.article-content th,.article-content td{border:1px solid #bbb;padding:6px 10px;text-align:left;min-width:60px}
+    .rte-editor th,.article-content th{background:#e8edf8;font-weight:600}
+    .rte-editor tr:nth-child(even) td,.article-content tr:nth-child(even) td{background:#f5f8ff}
     /* Toolbar */
     .editor-toolbar{display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap}
     .toolbar-btn{display:flex;align-items:center;gap:5px;background:var(--bg3);border:1px solid var(--line);border-radius:6px;padding:5px 10px;font-size:12px;font-family:var(--font);cursor:pointer;color:var(--ink2);transition:background .12s,border-color .12s}
@@ -418,13 +433,35 @@
         </div>
         <div class="form-group">
           <label class="form-label">內容 *</label>
-          <div class="editor-toolbar">
-            <button type="button" class="toolbar-btn" onclick="openTableEditor()" title="插入表格">
-              <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
-              插入表格
-            </button>
+          <div class="rte-wrap">
+            <div class="rte-toolbar">
+              <!-- 粗體/斜體/底線 -->
+              <button type="button" class="rte-btn" onclick="rteCmd('bold')" title="粗體"><b>B</b></button>
+              <button type="button" class="rte-btn" onclick="rteCmd('italic')" title="斜體"><i>I</i></button>
+              <button type="button" class="rte-btn" onclick="rteCmd('underline')" title="底線"><u>U</u></button>
+              <div class="rte-divider"></div>
+              <!-- 顏色 -->
+              <label class="rte-btn rte-color-btn" title="字體顏色">
+                A <input type="color" id="rteColorPicker" value="#e53e3e" oninput="rteCmd('foreColor',this.value)" style="width:0;height:0;opacity:0;position:absolute"/>
+              </label>
+              <button type="button" class="rte-btn" onclick="rteCmd('removeFormat')" title="清除格式">✕</button>
+              <div class="rte-divider"></div>
+              <!-- 對齊 -->
+              <button type="button" class="rte-btn" onclick="rteCmd('justifyLeft')" title="靠左">≡</button>
+              <button type="button" class="rte-btn" onclick="rteCmd('justifyCenter')" title="置中">≡</button>
+              <div class="rte-divider"></div>
+              <!-- 清單 -->
+              <button type="button" class="rte-btn" onclick="rteCmd('insertUnorderedList')" title="項目清單">• 清單</button>
+              <button type="button" class="rte-btn" onclick="rteCmd('insertOrderedList')" title="編號清單">1. 清單</button>
+              <div class="rte-divider"></div>
+              <!-- 表格 -->
+              <button type="button" class="rte-btn" onclick="openTableEditor()" title="插入表格">
+                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
+                插入表格
+              </button>
+            </div>
+            <div class="rte-editor" id="fContent" contenteditable="true" spellcheck="false"></div>
           </div>
-          <textarea class="form-textarea" id="fContent" placeholder="輸入文章內容…" style="min-height:280px"></textarea>
         </div>
 
         <!-- 表格編輯器 Modal -->
@@ -882,15 +919,7 @@
     document.getElementById('viewSubCat').textContent=sub?'／'+sub.label:'';
     document.getElementById('viewVer').textContent='v'+(d.version||1);
     document.getElementById('viewTitle').textContent=d.title||'';
-    // 內容：若含 HTML 表格則用 innerHTML，否則用 textContent 避免 XSS
-    const rawContent = d.content||'';
-    const contentEl = document.getElementById('viewContent');
-    if(/<table[\s>]/i.test(rawContent)){
-      // 有表格：安全地只允許表格相關 tag
-      contentEl.innerHTML = rawContent.replace(/<(?!\/?(?:table|thead|tbody|tr|th|td|br)\b)[^>]+>/gi,'');
-    } else {
-      contentEl.textContent = rawContent;
-    }
+    document.getElementById('viewContent').innerHTML = d.content||'';
     document.getElementById('viewCreated').textContent='建立：'+fmtDate(d.createdAt);
     document.getElementById('viewUpdated').textContent='更新：'+fmtDate(d.updatedAt);
     document.getElementById('viewAuthor').textContent=d.author?'作者：'+d.author:'';
@@ -918,7 +947,9 @@
     document.getElementById('editorTitle').textContent=d?'編輯文章':'新增文章';
     document.getElementById('fTitle').value=d?(d.title||''):'';
     document.getElementById('fTags').value=d?((d.tags||[]).join(', ')):'';
-    document.getElementById('fContent').value=d?(d.content||''):'';
+    const rte = document.getElementById('fContent');
+    rte.innerHTML = d ? (d.content||'') : '';
+    rte.setAttribute('data-placeholder','輸入文章內容…');
     document.getElementById('fSummary').value='';
     syncCatOptions();
     if(d){ document.getElementById('fCat').value=d.category||categories[0]?.id||''; syncSubCatOptions(d.subcategory||''); }
@@ -930,7 +961,7 @@
 
   async function saveDoc(){
     const title=document.getElementById('fTitle').value.trim();
-    const content=document.getElementById('fContent').value.trim();
+    const content=document.getElementById('fContent').innerHTML.trim();
     const cat=document.getElementById('fCat').value;
     const subcat=document.getElementById('fSubCat').value;
     const tags=document.getElementById('fTags').value.split(',').map(t=>t.trim()).filter(Boolean);
@@ -1078,6 +1109,12 @@
     });
   }
 
+  // ── Rich Text Editor 指令 ──────────────────────────────────
+  function rteCmd(cmd, val){
+    document.getElementById('fContent').focus();
+    document.execCommand(cmd, false, val||null);
+  }
+
   // ── 視覺化表格編輯器 ──────────────────────────────────────
   let teData = { rows: 3, cols: 3, headers: [], cells: [] };
 
@@ -1152,25 +1189,23 @@
       });
     });
 
-    // 轉成 HTML 表格字串插入內容
-    let tbl = '\n<table>\n<thead>\n<tr>';
+    // 產生 HTML 表格
+    let tbl = '<table><thead><tr>';
     teData.headers.forEach(h=>{ tbl+=`<th>${h||''}</th>`; });
-    tbl += '</tr>\n</thead>\n<tbody>\n';
+    tbl += '</tr></thead><tbody>';
     for(let r=0;r<teData.rows;r++){
       tbl += '<tr>';
       for(let c=0;c<teData.cols;c++){
         tbl += `<td>${(teData.cells[r]&&teData.cells[r][c])||''}</td>`;
       }
-      tbl += '</tr>\n';
+      tbl += '</tr>';
     }
-    tbl += '</tbody>\n</table>\n';
+    tbl += '</tbody></table><p><br></p>';
 
-    const ta = document.getElementById('fContent');
-    const start = ta.selectionStart;
-    const end   = ta.selectionEnd;
-    ta.value = ta.value.slice(0,start) + tbl + ta.value.slice(end);
-    ta.selectionStart = ta.selectionEnd = start + tbl.length;
-    ta.focus();
+    // 插入到 contenteditable
+    const rte = document.getElementById('fContent');
+    rte.focus();
+    document.execCommand('insertHTML', false, tbl);
     closeTableEditor();
     toast('✓ 表格已插入','success');
   }
