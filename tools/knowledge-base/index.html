@@ -78,6 +78,7 @@
     .cat-row-actions{display:none;gap:2px;padding-right:4px;flex-shrink:0}
     .cat-group-row:hover .cat-row-actions{display:flex}
     .cat-act{background:none;border:none;cursor:pointer;color:var(--ink3);padding:3px 4px;border-radius:4px;transition:color .12s,background .12s;display:flex;align-items:center}
+    .cat-act svg, .subcat-add-link svg { pointer-events: none; }
     .cat-act:hover{color:var(--accent2);background:var(--accent-bg)}
     .cat-act.del:hover{color:var(--red);background:var(--red-bg)}
 
@@ -591,19 +592,25 @@
 
       // 綁定事件（避免 onclick 字串拼接問題）
       li.querySelector(`[data-cat-toggle="${cat.id}"]`).addEventListener('click', e=>handleCatClick(e, cat.id));
-      li.querySelectorAll(`[data-add-sub="${cat.id}"]`).forEach(btn=>
-        btn.addEventListener('click', ()=>openModal('新增小分類 — '+cat.label,'例：玩具相關',v=>addSubCategory(cat.id,v)))
-      );
-      // 刪除大分類（只有 data-del-cat 且無 data-del-sub）
-      const delCatBtn = li.querySelector(`.cat-row-actions [data-del-cat="${cat.id}"]`);
-      if(delCatBtn) delCatBtn.addEventListener('click', ()=>deleteCategory(cat.id));
+      li.querySelectorAll(`[data-add-sub]`).forEach(btn=>{
+        const cid = btn.dataset.addSub;
+        const catObj = categories.find(c=>c.id===cid);
+        if(!catObj) return;
+        btn.addEventListener('click', e=>{
+          e.stopPropagation();
+          openModal('新增小分類 — '+catObj.label,'例：玩具相關',v=>addSubCategory(catObj.id,v));
+        });
+      });
+      // 刪除大分類
+      const delCatBtn = li.querySelector(`.cat-row-actions [data-del-cat]`);
+      if(delCatBtn) delCatBtn.addEventListener('click', e=>{ e.stopPropagation(); deleteCategory(cat.id); });
       // 刪除小分類
       li.querySelectorAll('[data-del-sub]').forEach(btn=>
-        btn.addEventListener('click', ()=>deleteSubCategory(btn.dataset.delCat, btn.dataset.delSub))
+        btn.addEventListener('click', e=>{ e.stopPropagation(); deleteSubCategory(btn.dataset.delCat, btn.dataset.delSub); })
       );
       // 小分類篩選
       li.querySelectorAll('[data-sub]').forEach(btn=>
-        btn.addEventListener('click', ()=>setFilter(btn.dataset.cat, btn.dataset.sub))
+        btn.addEventListener('click', e=>{ e.stopPropagation(); setFilter(btn.dataset.cat, btn.dataset.sub); })
       );
 
       tree.appendChild(li);
