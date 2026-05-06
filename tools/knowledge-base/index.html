@@ -501,6 +501,29 @@
     expandedCats.add(catId); renderTree(); syncCatOptions(); toast('✓ 小分類已新增','success');
   }
 
+  // 全域函式供 onclick 直接呼叫
+  window.promptAddSubCat = function(catId){
+    const catObj = categories.find(c=>c.id===catId);
+    if(!catObj){ toast('找不到分類','error'); return; }
+    const label = window.prompt('新增小分類（'+catObj.label+'）\n請輸入小分類名稱：','');
+    if(label && label.trim()) addSubCategory(catId, label.trim());
+  };
+  window.promptAddCat = function(){
+    const label = window.prompt('新增大分類\n請輸入分類名稱：','');
+    if(label && label.trim()) addCategory(label.trim());
+  };
+  window.promptDelCat = function(catId){
+    const c=categories.find(c=>c.id===catId); if(!c) return;
+    const cnt=allDocs.filter(d=>d.category===catId).length;
+    const msg=cnt>0?`「${c.label}」下有 ${cnt} 篇文章，刪除後分類將變成無效。確定？`:`確定刪除「${c.label}」？`;
+    if(confirm(msg)) deleteCategory(catId);
+  };
+  window.promptDelSub = function(catId, subId){
+    const c=categories.find(c=>c.id===catId); if(!c) return;
+    const sub=(c.subcategories||[]).find(s=>s.id===subId); if(!sub) return;
+    if(confirm(`確定刪除小分類「${sub.label}」？`)) deleteSubCategory(catId, subId);
+  };
+
   async function deleteSubCategory(catId,subId){
     const c=categories.find(c=>c.id===catId); if(!c) return;
     const sub=(c.subcategories||[]).find(s=>s.id===subId); if(!sub) return;
@@ -573,7 +596,7 @@
     // 分類標題列
     const labelLi=document.createElement('li');
     labelLi.innerHTML=`<div class="sb-tree-label">分類
-      <button class="sb-section-add" title="新增大分類" onclick="openModal('新增大分類','例：物流問題',v=>addCategory(v))">
+      <button class="sb-section-add" title="新增大分類" onclick="window.promptAddCat()">
         <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
       </button>
     </div>`;
@@ -595,13 +618,13 @@
         const subActive=activeFilter.cat===cat.id&&activeFilter.sub===sub.id;
         const subCnt=allDocs.filter(d=>d.category===cat.id&&d.subcategory===sub.id).length;
         subHtml+=`<li class="subcat-row${subActive?' active':''}">
-          <button class="subcat-btn" data-cat="${cat.id}" data-sub="${sub.id}">
+          <button class="subcat-btn" onclick="setFilter('${cat.id}','${sub.id}')">
             <span class="subcat-dot"></span>
             <span style="flex:1">${esc(sub.label)}</span>
             <span class="subcat-cnt">${subCnt}</span>
           </button>
           <div class="subcat-actions">
-            <button class="cat-act del" data-del-sub="${sub.id}" data-del-cat="${cat.id}" title="刪除小分類">
+            <button class="cat-act del" onclick="window.promptDelSub('${cat.id}','${sub.id}')" title="刪除小分類">
               <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
             </button>
           </div>
@@ -617,10 +640,10 @@
             <span class="cat-cnt">${catCnt}</span>
           </button>
           <div class="cat-row-actions">
-            <button class="cat-act" data-add-sub="${cat.id}" title="新增小分類">
+            <button class="cat-act" onclick="window.promptAddSubCat('${cat.id}')" title="新增小分類">
               <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
             </button>
-            <button class="cat-act del" data-del-cat="${cat.id}" title="刪除分類">
+            <button class="cat-act del" onclick="window.promptDelCat('${cat.id}')" title="刪除分類">
               <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
             </button>
           </div>
@@ -628,7 +651,7 @@
         <ul class="subcat-list${isExp?' open':''}" id="sub_${cat.id}">
           ${subHtml}
           <li class="subcat-add-row">
-            <button class="subcat-add-link" data-add-sub="${cat.id}">＋ 新增小分類</button>
+            <button class="subcat-add-link" onclick="window.promptAddSubCat('${cat.id}')">＋ 新增小分類</button>
           </li>
         </ul>`;
 
