@@ -424,7 +424,7 @@
   function catLabel(id){ const c=categories.find(c=>c.id===id); return c?c.label:id; }
   function catBadge(id){ return `<span class="sb-item-cat ${catCls(id)}">${esc(catLabel(id))}</span>`; }
 
-  function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/'/g,'&#39;').replace(/"/g,'&quot;'); }
 
   function toast(msg,type=''){
     const el=document.getElementById('toast');
@@ -546,18 +546,19 @@
       const li=document.createElement('li');
       li.className='cat-group';
 
+      // 建立小分類 HTML（用 data-* 屬性）
       let subHtml='';
       subs.forEach(sub=>{
         const subActive=activeFilter.cat===cat.id&&activeFilter.sub===sub.id;
         const subCnt=allDocs.filter(d=>d.category===cat.id&&d.subcategory===sub.id).length;
         subHtml+=`<li class="subcat-row${subActive?' active':''}">
-          <button class="subcat-btn" onclick="setFilter('${cat.id}','${sub.id}')">
+          <button class="subcat-btn" data-cat="${cat.id}" data-sub="${sub.id}">
             <span class="subcat-dot"></span>
             <span style="flex:1">${esc(sub.label)}</span>
             <span class="subcat-cnt">${subCnt}</span>
           </button>
           <div class="subcat-actions">
-            <button class="cat-act del" title="刪除小分類" onclick="deleteSubCategory('${cat.id}','${sub.id}')">
+            <button class="cat-act del" data-del-sub="${sub.id}" data-del-cat="${cat.id}" title="刪除小分類">
               <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
             </button>
           </div>
@@ -566,17 +567,17 @@
 
       li.innerHTML=`
         <div class="cat-group-row${catActive?' active':''}">
-          <button class="cat-toggle" onclick="handleCatClick(event,'${cat.id}')">
+          <button class="cat-toggle" data-cat-toggle="${cat.id}">
             <span class="cat-arrow${isExp?' open':''}">▶</span>
             <span style="font-size:14px">${cat.icon||'📁'}</span>
             <span style="flex:1">${esc(cat.label)}</span>
             <span class="cat-cnt">${catCnt}</span>
           </button>
           <div class="cat-row-actions">
-            <button class="cat-act" title="新增小分類" onclick="openModal('新增小分類 — ${esc(cat.label)}','例：玩具相關',v=>addSubCategory('${cat.id}',v))">
+            <button class="cat-act" data-add-sub="${cat.id}" title="新增小分類">
               <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
             </button>
-            <button class="cat-act del" title="刪除分類" onclick="deleteCategory('${cat.id}')">
+            <button class="cat-act del" data-del-cat="${cat.id}" title="刪除分類">
               <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
             </button>
           </div>
@@ -584,9 +585,27 @@
         <ul class="subcat-list${isExp?' open':''}" id="sub_${cat.id}">
           ${subHtml}
           <li class="subcat-add-row">
-            <button class="subcat-add-link" onclick="openModal('新增小分類 — ${esc(cat.label)}','例：玩具相關',v=>addSubCategory('${cat.id}',v))">＋ 新增小分類</button>
+            <button class="subcat-add-link" data-add-sub="${cat.id}">＋ 新增小分類</button>
           </li>
         </ul>`;
+
+      // 綁定事件（避免 onclick 字串拼接問題）
+      li.querySelector(`[data-cat-toggle="${cat.id}"]`).addEventListener('click', e=>handleCatClick(e, cat.id));
+      li.querySelectorAll(`[data-add-sub="${cat.id}"]`).forEach(btn=>
+        btn.addEventListener('click', ()=>openModal('新增小分類 — '+cat.label,'例：玩具相關',v=>addSubCategory(cat.id,v)))
+      );
+      // 刪除大分類（只有 data-del-cat 且無 data-del-sub）
+      const delCatBtn = li.querySelector(`.cat-row-actions [data-del-cat="${cat.id}"]`);
+      if(delCatBtn) delCatBtn.addEventListener('click', ()=>deleteCategory(cat.id));
+      // 刪除小分類
+      li.querySelectorAll('[data-del-sub]').forEach(btn=>
+        btn.addEventListener('click', ()=>deleteSubCategory(btn.dataset.delCat, btn.dataset.delSub))
+      );
+      // 小分類篩選
+      li.querySelectorAll('[data-sub]').forEach(btn=>
+        btn.addEventListener('click', ()=>setFilter(btn.dataset.cat, btn.dataset.sub))
+      );
+
       tree.appendChild(li);
     });
   }
