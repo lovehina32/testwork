@@ -264,17 +264,12 @@
         if (eyebrow) eyebrow.textContent = '歡迎，' + (s.displayName || s.username);
       }
 
-      // 取得工具權限：優先從 session 讀取，查無再從 Firestore 補
-      let tools = { logistics: true, claims: true, dailyReport: true, knowledge: true };
-      if (s) {
-        if (s.role === 'admin') {
-          tools = { logistics: true, claims: true, dailyReport: true, knowledge: true };
-        } else if (s.tools && Object.keys(s.tools).length > 0) {
-          tools = s.tools;
-        } else {
-          // session 沒有 tools，從 Firestore 補查
-          tools = await AUTH.getUserTools(s.username);
-        }
+      // 取得工具權限：直接從 session 讀取（登入時已寫入）
+      const ALL_TOOLS = { logistics: true, claims: true, dailyReport: true, knowledge: true };
+      let tools = ALL_TOOLS;
+      if (s && s.role !== 'admin') {
+        // user 角色：用 session 裡的 tools，若沒有則視為全開
+        tools = (s.tools && Object.keys(s.tools).length > 0) ? s.tools : ALL_TOOLS;
       }
 
       // 根據 URL ?tab= 決定顯示哪些卡片

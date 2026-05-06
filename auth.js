@@ -84,16 +84,19 @@ const AUTH = (function () {
   // ── 本地帳號驗證 ──────────────────────────────────────────
   async function localLogin(username, password) {
     const users = await getUsers();
+    console.log('[AUTH] localLogin users:', users.map(u=>u.username));
     const user  = users.find(u => u.username === username && u.password === password);
     if (!user)          return { ok: false, reason: '帳號或密碼錯誤' };
     if (!user.enabled)  return { ok: false, reason: '此帳號已停用，請聯絡管理員' };
     const allTools = { logistics: true, claims: true, dailyReport: true, knowledge: true };
+    const userTools = user.role === 'admin' ? allTools : Object.assign({}, allTools, user.tools || {});
+    console.log('[AUTH] localLogin tools for', username, ':', userTools);
     const session = {
       username:    user.username,
       role:        user.role,
       displayName: user.displayName,
       ts:          Date.now(),
-      tools:       user.role === 'admin' ? allTools : (user.tools || allTools)
+      tools:       userTools
     };
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
     return { ok: true, session };
