@@ -23,7 +23,7 @@
       </a>
             <nav class="site-nav">
         <a href="home.html" class="nav-active" id="nav-home">首頁</a>
-        <a href="tools/scheduling/index.html" id="nav-scheduling">客服排班</a>
+        <a href="tools/scheduling/index.html" id="nav-scheduling" style="display:none">客服排班</a>
         <a href="home.html?tab=frontline" id="nav-frontline">一線客服人員</a>
         <a href="home.html?tab=vendor"    id="nav-vendor">廠商客服人員</a>
         <a href="admin.html" id="nav-admin" style="display:none;color:var(--warn)">帳號管理</a>
@@ -253,10 +253,12 @@
     (async function () {
       const s = AUTH.getSession();
 
-      // 管理員顯示帳號管理
+      // 管理員顯示帳號管理與客服排班
       if (s && s.role === 'admin') {
         const el = document.getElementById('nav-admin');
         if (el) el.style.display = '';
+        const navSched = document.getElementById('nav-scheduling');
+        if (navSched) navSched.style.display = '';
       }
 
       // 歡迎訊息
