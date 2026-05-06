@@ -44,9 +44,19 @@ const AUTH = (function () {
     try {
       const snap = await db.collection('users').orderBy('createdAt').get();
       if (snap.empty) {
-        // 首次：寫入預設帳號
-        await initDefaultUsers(db);
-        return DEFAULT_USERS;
+        // 首次：合併 localStorage 舊帳號 + 預設帳號寫入 Firestore
+        const localUsers = getLocalUsers();
+        const toWrite = localUsers.length > 0 ? localUsers : DEFAULT_USERS;
+        const batch = db.batch();
+        toWrite.forEach(u => {
+          batch.set(db.collection('users').doc(u.username), {
+            ...u,
+            tools: u.tools || { logistics: true, claims: true, dailyReport: true, knowledge: true },
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+        });
+        await batch.commit();
+        return toWrite;
       }
       return snap.docs.map(d => ({ ...d.data() }));
     } catch (e) {
@@ -77,10 +87,13 @@ const AUTH = (function () {
     const user  = users.find(u => u.username === username && u.password === password);
     if (!user)          return { ok: false, reason: '帳號或密碼錯誤' };
     if (!user.enabled)  return { ok: false, reason: '此帳號已停用，請聯絡管理員' };
+    const allTools = { logistics: true, claims: true, dailyReport: true, knowledge: true };
     const session = {
-      username: user.username, role: user.role,
-      displayName: user.displayName, ts: Date.now(),
-      tools: user.tools || {}
+      username:    user.username,
+      role:        user.role,
+      displayName: user.displayName,
+      ts:          Date.now(),
+      tools:       user.role === 'admin' ? allTools : (user.tools || allTools)
     };
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
     return { ok: true, session };

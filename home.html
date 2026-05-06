@@ -264,8 +264,18 @@
         if (eyebrow) eyebrow.textContent = '歡迎，' + (s.displayName || s.username);
       }
 
-      // 取得工具權限（從 Firestore 非同步讀取）
-      const tools = s ? (await AUTH.getUserTools(s.username)) : { logistics: true, claims: true, dailyReport: true, knowledge: true };
+      // 取得工具權限：優先從 session 讀取，查無再從 Firestore 補
+      let tools = { logistics: true, claims: true, dailyReport: true, knowledge: true };
+      if (s) {
+        if (s.role === 'admin') {
+          tools = { logistics: true, claims: true, dailyReport: true, knowledge: true };
+        } else if (s.tools && Object.keys(s.tools).length > 0) {
+          tools = s.tools;
+        } else {
+          // session 沒有 tools，從 Firestore 補查
+          tools = await AUTH.getUserTools(s.username);
+        }
+      }
 
       // 根據 URL ?tab= 決定顯示哪些卡片
       const params  = new URLSearchParams(window.location.search);
