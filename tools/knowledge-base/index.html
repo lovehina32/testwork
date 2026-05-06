@@ -9,224 +9,230 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
   <style>
     :root {
-      --bg:        #f5f6f8;
-      --bg2:       #ffffff;
-      --bg3:       #f0f2f5;
-      --line:      #e4e7ec;
-      --line2:     #d0d5dd;
-      --ink:       #101828;
-      --ink2:      #475467;
-      --ink3:      #98a2b3;
-      --accent:    #3b82f6;
-      --accent2:   #1d4ed8;
-      --accent-bg: #eff6ff;
-      --accent-text: #1d4ed8;
-      --green:     #059669;
-      --green-bg:  #ecfdf5;
-      --amber:     #d97706;
-      --amber-bg:  #fffbeb;
-      --red:       #dc2626;
-      --red-bg:    #fef2f2;
-      --purple:    #7c3aed;
-      --purple-bg: #f5f3ff;
-      --radius:    8px;
-      --radius-lg: 14px;
-      --font:      'Noto Sans TC', sans-serif;
-      --mono:      'JetBrains Mono', monospace;
-      --shadow:    0 2px 12px rgba(0,0,0,0.08);
+      --bg:#f5f6f8; --bg2:#ffffff; --bg3:#f0f2f5; --line:#e4e7ec; --line2:#d0d5dd;
+      --ink:#101828; --ink2:#475467; --ink3:#98a2b3;
+      --accent:#3b82f6; --accent2:#1d4ed8; --accent-bg:#eff6ff;
+      --green:#059669; --green-bg:#ecfdf5; --amber:#d97706; --amber-bg:#fffbeb;
+      --red:#dc2626; --red-bg:#fef2f2; --purple:#7c3aed; --purple-bg:#f5f3ff;
+      --radius:8px; --radius-lg:14px;
+      --font:'Noto Sans TC',sans-serif; --mono:'JetBrains Mono',monospace;
     }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { font-size: 15px; }
-    body { font-family: var(--font); background: var(--bg); color: var(--ink); min-height: 100vh; display: flex; flex-direction: column; }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{font-size:15px}
+    body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:100vh;display:flex;flex-direction:column}
 
-    /* ── Header ── */
-    .hdr { display: flex; align-items: center; gap: 16px; padding: 0 24px; height: 52px; border-bottom: 1px solid var(--line); background: var(--bg2); position: sticky; top: 0; z-index: 100; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
-    .hdr-back { color: var(--ink2); text-decoration: none; font-size: 13px; display: flex; align-items: center; gap: 6px; transition: color .15s; }
-    .hdr-back:hover { color: var(--ink); }
-    .hdr-title { font-size: 15px; font-weight: 700; color: var(--ink); flex: 1; }
-    .hdr-badge { font-size: 11px; font-family: var(--mono); background: var(--accent-bg); color: var(--accent2); padding: 3px 8px; border-radius: 20px; border: 1px solid #bfdbfe; }
-    .hdr-status { font-size: 11px; font-family: var(--mono); color: var(--ink3); display: flex; align-items: center; gap: 5px; }
-    .hdr-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
-    .hdr-dot.offline { background: var(--red); }
-    .hdr-user { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ink2); border-left: 1px solid var(--line); padding-left: 14px; margin-left: 4px; }
-    .hdr-user-name { font-weight: 500; color: var(--ink); }
-    .hdr-user-avatar { width: 26px; height: 26px; border-radius: 50%; background: var(--accent-bg); color: var(--accent2); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+    /* Header */
+    .hdr{display:flex;align-items:center;gap:16px;padding:0 24px;height:52px;border-bottom:1px solid var(--line);background:var(--bg2);position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+    .hdr-back{color:var(--ink2);text-decoration:none;font-size:13px;display:flex;align-items:center;gap:6px;transition:color .15s}
+    .hdr-back:hover{color:var(--ink)}
+    .hdr-title{font-size:15px;font-weight:700;color:var(--ink);flex:1}
+    .hdr-badge{font-size:11px;font-family:var(--mono);background:var(--accent-bg);color:var(--accent2);padding:3px 8px;border-radius:20px;border:1px solid #bfdbfe}
+    .hdr-status{font-size:11px;font-family:var(--mono);color:var(--ink3);display:flex;align-items:center;gap:5px}
+    .hdr-dot{width:7px;height:7px;border-radius:50%;background:var(--green)}
+    .hdr-dot.offline{background:var(--red)}
+    .hdr-user{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink2);border-left:1px solid var(--line);padding-left:14px;margin-left:4px}
+    .hdr-user-name{font-weight:500;color:var(--ink)}
+    .hdr-user-avatar{width:26px;height:26px;border-radius:50%;background:var(--accent-bg);color:var(--accent2);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
 
-    /* ── Layout ── */
-    .layout { display: grid; grid-template-columns: 240px 1fr; flex: 1; height: calc(100vh - 56px); overflow: hidden; }
+    /* Layout */
+    .layout{display:grid;grid-template-columns:260px 1fr;flex:1;height:calc(100vh - 52px);overflow:hidden}
 
-    /* ── Sidebar ── */
-    .sidebar { background: var(--bg2); border-right: 1px solid var(--line); display: flex; flex-direction: column; overflow: hidden; width: 240px; }
-    .sb-search { padding: 14px 14px 10px; }
-    .sb-search-box { display: flex; align-items: center; gap: 8px; background: var(--bg3); border: 1px solid var(--line); border-radius: var(--radius); padding: 0 10px; transition: border-color .15s; }
-    .sb-search-box:focus-within { border-color: var(--accent); }
-    .sb-search-box svg { color: var(--ink3); flex-shrink: 0; }
-    .sb-search-box input { background: none; border: none; outline: none; color: var(--ink); font-family: var(--font); font-size: 13px; width: 100%; padding: 8px 0; }
-    .sb-search-box input::placeholder { color: var(--ink3); }
+    /* Sidebar */
+    .sidebar{background:var(--bg2);border-right:1px solid var(--line);display:flex;flex-direction:column;overflow:hidden}
+    .sb-search{padding:12px 12px 8px}
+    .sb-search-box{display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--line);border-radius:var(--radius);padding:0 10px;transition:border-color .15s}
+    .sb-search-box:focus-within{border-color:var(--accent)}
+    .sb-search-box svg{color:var(--ink3);flex-shrink:0}
+    .sb-search-box input{background:none;border:none;outline:none;color:var(--ink);font-family:var(--font);font-size:13px;width:100%;padding:7px 0}
+    .sb-search-box input::placeholder{color:var(--ink3)}
 
-    .sb-new-btn { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; color: var(--accent2); background: var(--accent-bg); border: none; border-radius: var(--radius); padding: 9px 14px; cursor: pointer; transition: background .15s; width: calc(100% - 28px); margin: 0 14px 4px; }
-    .sb-new-btn:hover { background: #dbeafe; }
+    .sb-new-btn{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;color:var(--accent2);background:var(--accent-bg);border:none;border-radius:var(--radius);padding:8px 12px;cursor:pointer;transition:background .15s;width:calc(100% - 24px);margin:0 12px 6px}
+    .sb-new-btn:hover{background:#dbeafe}
 
-    .sb-section-label { font-size: 11px; font-weight: 600; color: var(--ink3); text-transform: uppercase; letter-spacing: 0.06em; padding: 14px 16px 6px; }
+    /* Tree */
+    .sb-tree{list-style:none;padding:4px 6px;overflow-y:auto;flex:1}
+    .sb-tree::-webkit-scrollbar{width:3px}
+    .sb-tree::-webkit-scrollbar-thumb{background:var(--line2);border-radius:3px}
 
-    .sb-nav { list-style: none; padding: 0 8px; }
-    .sb-nav li { margin-bottom: 1px; }
-    .sb-nav-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--radius); cursor: pointer; transition: background .12s; font-size: 13px; color: var(--ink2); border: none; background: none; width: 100%; text-align: left; font-family: var(--font); }
-    .sb-nav-item:hover { background: var(--bg3); color: var(--ink); }
-    .sb-nav-item.active { background: var(--accent-bg); color: var(--accent2); font-weight: 500; }
-    .sb-nav-icon { font-size: 15px; width: 20px; text-align: center; flex-shrink: 0; }
-    .sb-nav-count { margin-left: auto; font-size: 11px; font-family: var(--mono); color: var(--ink3); background: var(--bg3); padding: 1px 7px; border-radius: 10px; }
-    .sb-nav-item.active .sb-nav-count { background: #dbeafe; color: var(--accent2); }
+    .sb-tree-label{font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.07em;padding:8px 8px 3px;display:flex;align-items:center;justify-content:space-between}
+    .sb-section-add{background:none;border:none;cursor:pointer;color:var(--ink3);padding:2px 4px;border-radius:4px;transition:color .12s,background .12s;display:flex;align-items:center}
+    .sb-section-add:hover{color:var(--accent2);background:var(--accent-bg)}
 
-    .sb-divider { height: 1px; background: var(--line); margin: 10px 14px; }
+    .sb-flat-btn{display:flex;align-items:center;gap:7px;padding:7px 8px;border-radius:var(--radius);cursor:pointer;font-size:13px;color:var(--ink2);border:none;background:none;width:100%;text-align:left;font-family:var(--font);transition:background .12s;margin-bottom:1px}
+    .sb-flat-btn:hover{background:var(--bg3);color:var(--ink)}
+    .sb-flat-btn.active{background:var(--accent-bg);color:var(--accent2);font-weight:500}
+    .sb-flat-cnt{margin-left:auto;font-size:10px;font-family:var(--mono);background:var(--bg3);color:var(--ink3);padding:1px 6px;border-radius:10px}
+    .sb-flat-btn.active .sb-flat-cnt{background:#dbeafe;color:var(--accent2)}
 
-    .sb-list { flex: 1; overflow-y: auto; padding: 4px 8px 8px; }
-    .sb-list::-webkit-scrollbar { width: 4px; }
-    .sb-list::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 4px; }
+    /* Category group */
+    .cat-group{margin-bottom:1px}
+    .cat-group-row{display:flex;align-items:center;border-radius:var(--radius);transition:background .12s}
+    .cat-group-row:hover{background:var(--bg3)}
+    .cat-group-row.active{background:var(--accent-bg)}
+    .cat-toggle{flex:1;display:flex;align-items:center;gap:6px;padding:7px 6px;cursor:pointer;border:none;background:none;font-family:var(--font);font-size:13px;color:var(--ink2);text-align:left}
+    .cat-group-row.active .cat-toggle{color:var(--accent2);font-weight:500}
+    .cat-arrow{font-size:9px;color:var(--ink3);flex-shrink:0;transition:transform .18s;display:inline-block}
+    .cat-arrow.open{transform:rotate(90deg)}
+    .cat-cnt{font-size:10px;font-family:var(--mono);background:var(--bg3);color:var(--ink3);padding:1px 6px;border-radius:10px;margin-left:auto}
+    .cat-group-row.active .cat-cnt{background:#dbeafe;color:var(--accent2)}
+    .cat-row-actions{display:none;gap:2px;padding-right:4px;flex-shrink:0}
+    .cat-group-row:hover .cat-row-actions{display:flex}
+    .cat-act{background:none;border:none;cursor:pointer;color:var(--ink3);padding:3px 4px;border-radius:4px;transition:color .12s,background .12s;display:flex;align-items:center}
+    .cat-act:hover{color:var(--accent2);background:var(--accent-bg)}
+    .cat-act.del:hover{color:var(--red);background:var(--red-bg)}
 
-    .sb-empty { text-align: center; padding: 32px 16px; color: var(--ink3); font-size: 13px; }
+    /* Subcategory */
+    .subcat-list{list-style:none;display:none;padding:1px 0 2px 20px}
+    .subcat-list.open{display:block}
+    .subcat-row{display:flex;align-items:center;border-radius:var(--radius);transition:background .12s}
+    .subcat-row:hover{background:var(--bg3)}
+    .subcat-row.active{background:var(--accent-bg)}
+    .subcat-btn{flex:1;display:flex;align-items:center;gap:5px;padding:5px 6px;cursor:pointer;border:none;background:none;font-family:var(--font);font-size:12px;color:var(--ink2);text-align:left}
+    .subcat-row.active .subcat-btn{color:var(--accent2);font-weight:500}
+    .subcat-dot{width:5px;height:5px;border-radius:50%;background:var(--line2);flex-shrink:0}
+    .subcat-row.active .subcat-dot{background:var(--accent)}
+    .subcat-cnt{font-size:10px;font-family:var(--mono);color:var(--ink3);margin-left:auto}
+    .subcat-actions{display:none;padding-right:4px}
+    .subcat-row:hover .subcat-actions{display:flex}
+    .subcat-add-row{padding:3px 4px 3px 26px}
+    .subcat-add-link{font-size:11px;color:var(--ink3);background:none;border:none;cursor:pointer;font-family:var(--font);padding:3px 6px;border-radius:4px;transition:color .12s,background .12s}
+    .subcat-add-link:hover{color:var(--accent2);background:var(--accent-bg)}
 
-    .sb-item { padding: 10px 10px; border-radius: var(--radius); cursor: pointer; transition: background .12s; margin-bottom: 2px; border-left: 3px solid transparent; }
-    .sb-item:hover { background: var(--bg3); }
-    .sb-item.active { background: var(--accent-bg); border-left-color: var(--accent); }
-    .sb-item-title { font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .sb-item-meta { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--ink3); }
-    .sb-item-cat { font-size: 10px; padding: 1px 6px; border-radius: 10px; font-family: var(--font); font-weight: 500; }
-    .sb-item-snippet { font-size: 11px; color: var(--ink3); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    /* Article list */
+    .sb-divider{height:1px;background:var(--line);margin:6px 10px}
+    .sb-list{overflow-y:auto;padding:2px 6px 8px;max-height:320px}
+    .sb-list::-webkit-scrollbar{width:3px}
+    .sb-list::-webkit-scrollbar-thumb{background:var(--line2);border-radius:3px}
+    .sb-empty{text-align:center;padding:20px 12px;color:var(--ink3);font-size:12px}
+    .sb-item{padding:9px 10px;border-radius:var(--radius);cursor:pointer;transition:background .12s;margin-bottom:2px;border-left:3px solid transparent}
+    .sb-item:hover{background:var(--bg3)}
+    .sb-item.active{background:var(--accent-bg);border-left-color:var(--accent)}
+    .sb-item-title{font-size:13px;font-weight:500;color:var(--ink);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .sb-item-meta{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink3)}
+    .sb-item-cat{font-size:10px;padding:1px 6px;border-radius:10px;font-family:var(--font);font-weight:500}
+    .sb-item-snippet{font-size:11px;color:var(--ink3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .sb-cnt{font-size:10px;font-family:var(--mono);background:var(--bg3);color:var(--ink3);padding:1px 6px;border-radius:20px;margin-left:auto}
 
-    /* ── Main Content ── */
-    .main { display: flex; flex-direction: column; overflow: hidden; background: #f9fafb; }
-
-    /* Welcome state */
-    .welcome { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 40px; }
-    .welcome-icon { width: 64px; height: 64px; background: var(--accent-bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; }
-    .welcome h2 { font-size: 20px; font-weight: 700; }
-    .welcome p { color: var(--ink2); text-align: center; font-size: 14px; line-height: 1.7; max-width: 300px; }
-    .welcome-btn { background: var(--accent); color: #fff; border: none; border-radius: var(--radius); padding: 10px 24px; font-family: var(--font); font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity .15s; }
-    .welcome-btn:hover { opacity: .85; }
+    /* Main */
+    .main{display:flex;flex-direction:column;overflow:hidden;background:#f9fafb}
 
     /* Article view */
-    .article-view { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-    .article-hdr { display: flex; align-items: flex-start; gap: 12px; padding: 20px 28px 16px; border-bottom: 1px solid var(--line); background: var(--bg2); }
-    .article-hdr-main { flex: 1; min-width: 0; }
-    .article-cat-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
-    .article-title { font-size: 20px; font-weight: 700; color: var(--ink); line-height: 1.4; }
-    .article-meta { display: flex; align-items: center; gap: 14px; margin-top: 8px; font-size: 11px; font-family: var(--mono); color: var(--ink3); flex-wrap: wrap; }
-    .article-actions { display: flex; gap: 8px; flex-shrink: 0; }
-    .btn-icon { width: 32px; height: 32px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--bg2); color: var(--ink2); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; }
-    .btn-icon:hover { border-color: var(--accent); color: var(--accent2); background: var(--accent-bg); }
-    .btn-icon.danger:hover { border-color: var(--red); color: var(--red); background: var(--red-bg); }
+    .article-view{flex:1;display:flex;flex-direction:column;overflow:hidden}
+    .article-hdr{display:flex;align-items:flex-start;gap:12px;padding:20px 28px 16px;border-bottom:1px solid var(--line);background:var(--bg2)}
+    .article-hdr-main{flex:1;min-width:0}
+    .article-cat-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+    .article-title{font-size:20px;font-weight:700;color:var(--ink);line-height:1.4}
+    .article-meta{display:flex;align-items:center;gap:14px;margin-top:8px;font-size:11px;font-family:var(--mono);color:var(--ink3);flex-wrap:wrap}
+    .article-actions{display:flex;gap:8px;flex-shrink:0}
+    .btn-icon{width:32px;height:32px;border-radius:var(--radius);border:1px solid var(--line);background:var(--bg2);color:var(--ink2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+    .btn-icon:hover{border-color:var(--accent);color:var(--accent2);background:var(--accent-bg)}
+    .btn-icon.danger:hover{border-color:var(--red);color:var(--red);background:var(--red-bg)}
+    .article-body{flex:1;overflow-y:auto;padding:24px 28px}
+    .article-body::-webkit-scrollbar{width:4px}
+    .article-body::-webkit-scrollbar-thumb{background:var(--line2);border-radius:4px}
+    .article-content{font-size:14px;line-height:1.9;color:var(--ink2);white-space:pre-wrap;word-break:break-word}
+    .article-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:24px;padding-top:20px;border-top:1px solid var(--line)}
+    .tag-chip{font-size:11px;padding:3px 10px;border-radius:20px;background:var(--bg3);border:1px solid var(--line);color:var(--ink2)}
 
-    .article-body { flex: 1; overflow-y: auto; padding: 24px 28px; }
-    .article-body::-webkit-scrollbar { width: 4px; }
-    .article-body::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 4px; }
-    .article-content { font-size: 14px; line-height: 1.9; color: var(--ink2); white-space: pre-wrap; word-break: break-word; }
-    .article-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line); }
-    .tag-chip { font-size: 11px; padding: 3px 10px; border-radius: 20px; background: var(--bg3); border: 1px solid var(--line); color: var(--ink2); }
-
-    /* Versions panel */
-    .ver-panel { border-top: 1px solid var(--line); padding: 14px 28px; max-height: 180px; overflow-y: auto; background: #f9fafb; }
-    .ver-panel::-webkit-scrollbar { width: 4px; }
-    .ver-panel::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 4px; }
-    .ver-title { font-size: 11px; font-family: var(--mono); color: var(--ink3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
-    .ver-item { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 12px; font-family: var(--mono); color: var(--ink2); flex-wrap: wrap; }
-    .ver-item:last-child { border: none; }
-    .ver-num { color: var(--accent2); font-weight: 500; min-width: 30px; }
-    .ver-operator { display: inline-flex; align-items: center; gap: 4px; background: var(--accent-bg); color: var(--accent2); font-size: 10px; padding: 1px 7px; border-radius: 10px; font-family: var(--font); }
-    .ver-action { font-size: 10px; padding: 1px 7px; border-radius: 10px; font-family: var(--font); }
-    .ver-action-edit   { background: #fffbeb; color: #92400e; }
-    .ver-action-create { background: #ecfdf5; color: #065f46; }
-    .ver-action-delete { background: #fef2f2; color: #991b1b; }
+    /* Versions */
+    .ver-panel{border-top:1px solid var(--line);padding:14px 28px;max-height:180px;overflow-y:auto;background:#f9fafb}
+    .ver-panel::-webkit-scrollbar{width:4px}
+    .ver-panel::-webkit-scrollbar-thumb{background:var(--line2);border-radius:4px}
+    .ver-title{font-size:11px;font-family:var(--mono);color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+    .ver-item{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);font-size:12px;font-family:var(--mono);color:var(--ink2);flex-wrap:wrap}
+    .ver-item:last-child{border:none}
+    .ver-num{color:var(--accent2);font-weight:500;min-width:30px}
+    .ver-operator{display:inline-flex;align-items:center;gap:4px;background:var(--accent-bg);color:var(--accent2);font-size:10px;padding:1px 7px;border-radius:10px;font-family:var(--font)}
+    .ver-action{font-size:10px;padding:1px 7px;border-radius:10px;font-family:var(--font)}
+    .ver-action-edit{background:#fffbeb;color:#92400e}
+    .ver-action-create{background:#ecfdf5;color:#065f46}
 
     /* Editor */
-    .editor-view { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-    .editor-hdr { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--line); background: #fff; }
-    .editor-title-text { font-size: 14px; font-weight: 600; flex: 1; }
-    .btn-save { font-size: 12px; font-weight: 600; font-family: var(--font); background: var(--green); color: #fff; border: none; border-radius: var(--radius); padding: 7px 18px; cursor: pointer; transition: opacity .15s; display: flex; align-items: center; gap: 6px; }
-    .btn-save:hover { opacity: .85; }
-    .btn-save:disabled { opacity: .5; cursor: not-allowed; }
-    .btn-cancel { font-size: 12px; font-family: var(--font); background: var(--bg3); color: var(--ink2); border: 1px solid var(--line); border-radius: var(--radius); padding: 7px 14px; cursor: pointer; transition: all .15s; }
-    .btn-cancel:hover { border-color: var(--line2); color: var(--ink); }
+    .editor-view{flex:1;display:flex;flex-direction:column;overflow:hidden}
+    .editor-hdr{display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--line);background:#fff}
+    .editor-title-text{font-size:14px;font-weight:600;flex:1}
+    .btn-save{font-size:12px;font-weight:600;font-family:var(--font);background:var(--green);color:#fff;border:none;border-radius:var(--radius);padding:7px 18px;cursor:pointer;transition:opacity .15s;display:flex;align-items:center;gap:6px}
+    .btn-save:hover{opacity:.85}
+    .btn-save:disabled{opacity:.5;cursor:not-allowed}
+    .btn-cancel{font-size:12px;font-family:var(--font);background:var(--bg3);color:var(--ink2);border:1px solid var(--line);border-radius:var(--radius);padding:7px 14px;cursor:pointer;transition:all .15s}
+    .btn-cancel:hover{border-color:var(--line2);color:var(--ink)}
+    .editor-form{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px}
+    .editor-form::-webkit-scrollbar{width:4px}
+    .editor-form::-webkit-scrollbar-thumb{background:var(--line2);border-radius:4px}
+    .form-row{display:flex;gap:12px}
+    .form-group{display:flex;flex-direction:column;gap:6px;flex:1}
+    .form-label{font-size:11px;font-family:var(--mono);color:var(--ink3);text-transform:uppercase;letter-spacing:.05em}
+    .form-input,.form-select,.form-textarea{background:#fff;border:1px solid var(--line);border-radius:var(--radius);color:var(--ink);font-family:var(--font);font-size:13px;padding:9px 12px;transition:border-color .15s;outline:none}
+    .form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--accent)}
+    .form-select{cursor:pointer}
+    .form-select option{background:var(--bg3)}
+    .form-textarea{resize:vertical;min-height:220px;line-height:1.7}
 
-    .editor-form { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
-    .editor-form::-webkit-scrollbar { width: 4px; }
-    .editor-form::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 4px; }
-    .form-row { display: flex; gap: 12px; }
-    .form-group { display: flex; flex-direction: column; gap: 6px; flex: 1; }
-    .form-label { font-size: 11px; font-family: var(--mono); color: var(--ink3); text-transform: uppercase; letter-spacing: 0.05em; }
-    .form-input, .form-select, .form-textarea { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); color: var(--ink); font-family: var(--font); font-size: 13px; padding: 9px 12px; transition: border-color .15s; outline: none; }
-    .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--accent); }
-    .form-select { cursor: pointer; }
-    .form-select option { background: var(--bg3); }
-    .form-textarea { resize: vertical; min-height: 220px; line-height: 1.7; }
+    /* Cat badge colours */
+    .cat-sop{background:#eff6ff;color:#1d4ed8}
+    .cat-faq{background:#ecfdf5;color:#065f46}
+    .cat-policy{background:#fffbeb;color:#92400e}
+    .cat-notice{background:#fef2f2;color:#991b1b}
+    .cat-other{background:#f5f3ff;color:#5b21b6}
+    .cat-custom{background:#f0fdf4;color:#166534}
 
-    /* Category badge colors */
-    .cat-sop     { background: #eff6ff; color: #1d4ed8; }
-    .cat-faq     { background: #ecfdf5; color: #065f46; }
-    .cat-policy  { background: #fffbeb; color: #92400e; }
-    .cat-notice  { background: #fef2f2; color: #991b1b; }
-    .cat-other   { background: #f5f3ff; color: #5b21b6; }
-
-    /* Loading overlay */
-    .loading { position: fixed; inset: 0; background: rgba(249,250,251,0.92); display: flex; align-items: center; justify-content: center; z-index: 500; backdrop-filter: blur(4px); }
-    .loading-inner { display: flex; flex-direction: column; align-items: center; gap: 12px; }
-    .spinner { width: 32px; height: 32px; border: 3px solid #e4e7ec; border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .loading-text { font-size: 13px; color: var(--ink2); font-family: var(--mono); margin-top: 4px; }
+    /* Loading */
+    .loading{position:fixed;inset:0;background:rgba(249,250,251,.92);display:flex;align-items:center;justify-content:center;z-index:500;backdrop-filter:blur(4px)}
+    .loading-inner{display:flex;flex-direction:column;align-items:center;gap:12px}
+    .spinner{width:32px;height:32px;border:3px solid #e4e7ec;border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .loading-text{font-size:13px;color:var(--ink2);font-family:var(--mono);margin-top:4px}
 
     /* Toast */
-    .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(10px); background: #fff; border: 1px solid var(--line); color: var(--ink); font-size: 13px; padding: 10px 20px; border-radius: 30px; box-shadow: 0 4px 16px rgba(0,0,0,0.12); opacity: 0; transition: all .25s; z-index: 999; white-space: nowrap; }
-    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-    .toast.success { border-color: var(--green); color: var(--green); }
-    .toast.error   { border-color: var(--red); color: var(--red); }
+    .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(10px);background:#fff;border:1px solid var(--line);color:var(--ink);font-size:13px;padding:10px 20px;border-radius:30px;box-shadow:0 4px 16px rgba(0,0,0,.12);opacity:0;transition:all .25s;z-index:999;white-space:nowrap}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    .toast.success{border-color:var(--green);color:var(--green)}
+    .toast.error{border-color:var(--red);color:var(--red)}
 
-    /* Count badge */
-    .sb-count { font-size: 10px; font-family: var(--mono); background: var(--bg3); color: var(--ink3); padding: 1px 7px; border-radius: 20px; margin-left: auto; }
+    /* Modal */
+    .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:600;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px)}
+    .modal{background:#fff;border-radius:var(--radius-lg);padding:24px;width:360px;box-shadow:0 8px 40px rgba(0,0,0,.18)}
+    .modal-title{font-size:15px;font-weight:700;margin-bottom:14px}
+    .modal-input{width:100%;border:1px solid var(--line);border-radius:var(--radius);padding:9px 12px;font-size:13px;font-family:var(--font);outline:none}
+    .modal-input:focus{border-color:var(--accent)}
+    .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+    .modal-ok{background:var(--accent);color:#fff;border:none;border-radius:var(--radius);padding:8px 20px;font-size:13px;font-family:var(--font);font-weight:600;cursor:pointer}
+    .modal-cancel{background:var(--bg3);color:var(--ink2);border:1px solid var(--line);border-radius:var(--radius);padding:8px 14px;font-size:13px;font-family:var(--font);cursor:pointer}
 
-    /* ── Recent Activity Panel ── */
-    .activity-panel { flex: 1; overflow-y: auto; padding: 28px 32px; background: #f9fafb; }
-    .activity-panel::-webkit-scrollbar { width: 4px; }
-    .activity-panel::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 4px; }
-
-    .activity-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
-    .activity-heading { font-size: 18px; font-weight: 700; color: var(--ink); }
-    .activity-count-badge { font-size: 12px; font-family: var(--mono); color: var(--ink3); background: var(--bg3); border: 1px solid var(--line); padding: 3px 12px; border-radius: 20px; }
-
-    .activity-section { margin-bottom: 24px; }
-    .activity-section-title { font-size: 11px; font-weight: 600; color: var(--ink3); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
-    .activity-section-title::after { content: ''; flex: 1; height: 1px; background: var(--line); }
-
-    .activity-item { background: var(--bg2); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 14px 18px; margin-bottom: 8px; display: flex; align-items: center; gap: 14px; cursor: pointer; transition: box-shadow .15s, border-color .15s; }
-    .activity-item:hover { border-color: var(--accent); box-shadow: 0 2px 12px rgba(59,130,246,0.10); }
-    .activity-item.deleted { cursor: default; opacity: .75; }
-    .activity-item.deleted:hover { border-color: var(--line); box-shadow: none; }
-
-    .activity-date { font-size: 12px; font-family: var(--mono); color: var(--ink3); min-width: 50px; text-align: center; line-height: 1.4; }
-    .activity-date-day { font-size: 16px; font-weight: 700; color: var(--ink2); display: block; }
-
-    .activity-badge { font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 500; white-space: nowrap; flex-shrink: 0; }
-    .badge-create { background: var(--green-bg); color: var(--green); }
-    .badge-edit   { background: var(--amber-bg); color: var(--amber); }
-    .badge-delete { background: var(--red-bg);   color: var(--red); }
-
-    .activity-body { flex: 1; min-width: 0; }
-    .activity-title { font-size: 14px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .activity-title.deleted { text-decoration: line-through; color: var(--ink3); }
-    .activity-subtitle { font-size: 12px; color: var(--ink3); margin-top: 3px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-
-    .activity-arrow { color: var(--ink3); flex-shrink: 0; }
-
-    .activity-empty { text-align: center; padding: 60px 20px; color: var(--ink3); }
-    .activity-empty-icon { font-size: 40px; margin-bottom: 12px; }
-    .activity-empty-text { font-size: 14px; margin-bottom: 20px; line-height: 1.7; }
-
-    .activity-new-btn { background: var(--accent); color: #fff; border: none; border-radius: var(--radius); padding: 10px 24px; font-family: var(--font); font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity .15s; }
-    .activity-new-btn:hover { opacity: .85; }
+    /* Activity panel */
+    .activity-panel{flex:1;overflow-y:auto;padding:28px 32px;background:#f9fafb}
+    .activity-panel::-webkit-scrollbar{width:4px}
+    .activity-panel::-webkit-scrollbar-thumb{background:var(--line2);border-radius:4px}
+    .activity-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+    .activity-heading{font-size:18px;font-weight:700;color:var(--ink)}
+    .activity-count-badge{font-size:12px;font-family:var(--mono);color:var(--ink3);background:var(--bg3);border:1px solid var(--line);padding:3px 12px;border-radius:20px}
+    .activity-section{margin-bottom:24px}
+    .activity-section-title{font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+    .activity-section-title::after{content:'';flex:1;height:1px;background:var(--line)}
+    .activity-item{background:var(--bg2);border:1px solid var(--line);border-radius:var(--radius-lg);padding:14px 18px;margin-bottom:8px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:box-shadow .15s,border-color .15s}
+    .activity-item:hover{border-color:var(--accent);box-shadow:0 2px 12px rgba(59,130,246,.1)}
+    .activity-item.deleted{cursor:default;opacity:.75}
+    .activity-item.deleted:hover{border-color:var(--line);box-shadow:none}
+    .activity-date{font-size:12px;font-family:var(--mono);color:var(--ink3);min-width:50px;text-align:center;line-height:1.4}
+    .activity-date-day{font-size:16px;font-weight:700;color:var(--ink2);display:block}
+    .activity-badge{font-size:11px;padding:3px 10px;border-radius:20px;font-weight:500;white-space:nowrap;flex-shrink:0}
+    .badge-create{background:var(--green-bg);color:var(--green)}
+    .badge-edit{background:var(--amber-bg);color:var(--amber)}
+    .badge-delete{background:var(--red-bg);color:var(--red)}
+    .activity-body{flex:1;min-width:0}
+    .activity-title{font-size:14px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .activity-title.deleted{text-decoration:line-through;color:var(--ink3)}
+    .activity-subtitle{font-size:12px;color:var(--ink3);margin-top:3px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .activity-arrow{color:var(--ink3);flex-shrink:0}
+    .activity-empty{text-align:center;padding:60px 20px;color:var(--ink3)}
+    .activity-empty-icon{font-size:40px;margin-bottom:12px}
+    .activity-empty-text{font-size:14px;margin-bottom:20px;line-height:1.7}
+    .activity-new-btn{background:var(--accent);color:#fff;border:none;border-radius:var(--radius);padding:10px 24px;font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;transition:opacity .15s}
+    .activity-new-btn:hover{opacity:.85}
   </style>
 </head>
 <body>
 
-<!-- Auth guard -->
 <script src="../../auth.js"></script>
 <script>
   const _kbSession = AUTH.guard(null, '../../login.html');
@@ -234,7 +240,6 @@
   const _kbUsername = _kbSession ? _kbSession.username : '';
 </script>
 
-<!-- Loading -->
 <div class="loading" id="loadingOverlay">
   <div class="loading-inner">
     <div class="spinner"></div>
@@ -242,10 +247,20 @@
   </div>
 </div>
 
-<!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<!-- Header -->
+<!-- Modal -->
+<div class="modal-backdrop" id="modalBackdrop" style="display:none" onclick="closeModal()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title" id="modalTitle"></div>
+    <input class="modal-input" id="modalInput" placeholder="" onkeydown="if(event.key==='Enter')confirmModal()"/>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeModal()">取消</button>
+      <button class="modal-ok" onclick="confirmModal()">確認</button>
+    </div>
+  </div>
+</div>
+
 <header class="hdr">
   <a href="../../home.html" class="hdr-back">
     <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
@@ -260,10 +275,7 @@
   <div class="hdr-user" id="hdrUser"></div>
 </header>
 
-<!-- Layout -->
 <div class="layout">
-
-  <!-- Sidebar -->
   <aside class="sidebar">
     <div class="sb-search">
       <div class="sb-search-box">
@@ -271,46 +283,12 @@
         <input type="text" id="searchInput" placeholder="搜尋標題、內容、標籤…" oninput="handleSearch()"/>
       </div>
     </div>
-
     <button class="sb-new-btn" onclick="openEditor(null)">
       <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
       新增文章
     </button>
 
-    <div class="sb-section-label">快速導覽</div>
-    <ul class="sb-nav">
-      <li><button class="sb-nav-item" id="nav-home" onclick="showHome()">
-        <span class="sb-nav-icon">🏠</span> 首頁
-      </button></li>
-    </ul>
-
-    <div class="sb-section-label">分類</div>
-    <ul class="sb-nav">
-      <li><button class="sb-nav-item active" id="filter-all" onclick="setFilter('all')">
-        <span class="sb-nav-icon">📋</span> 全部
-        <span class="sb-nav-count" id="cnt-all">0</span>
-      </button></li>
-      <li><button class="sb-nav-item" id="filter-sop" onclick="setFilter('sop')">
-        <span class="sb-nav-icon">📌</span> SOP 作業程序
-        <span class="sb-nav-count" id="cnt-sop">0</span>
-      </button></li>
-      <li><button class="sb-nav-item" id="filter-faq" onclick="setFilter('faq')">
-        <span class="sb-nav-icon">💬</span> FAQ 常見問答
-        <span class="sb-nav-count" id="cnt-faq">0</span>
-      </button></li>
-      <li><button class="sb-nav-item" id="filter-policy" onclick="setFilter('policy')">
-        <span class="sb-nav-icon">📜</span> 規範 / 規則
-        <span class="sb-nav-count" id="cnt-policy">0</span>
-      </button></li>
-      <li><button class="sb-nav-item" id="filter-notice" onclick="setFilter('notice')">
-        <span class="sb-nav-icon">⚠️</span> 注意事項
-        <span class="sb-nav-count" id="cnt-notice">0</span>
-      </button></li>
-      <li><button class="sb-nav-item" id="filter-other" onclick="setFilter('other')">
-        <span class="sb-nav-icon">📁</span> 其他
-        <span class="sb-nav-count" id="cnt-other">0</span>
-      </button></li>
-    </ul>
+    <ul class="sb-tree" id="sbTree"></ul>
 
     <div class="sb-divider"></div>
     <div class="sb-list" id="sbList">
@@ -318,10 +296,8 @@
     </div>
   </aside>
 
-  <!-- Main -->
-  <main class="main" id="mainPanel">
-
-    <!-- Activity Panel (近期動態, replaces old welcome) -->
+  <main class="main">
+    <!-- Activity -->
     <div class="activity-panel" id="welcomePanel">
       <div class="activity-top">
         <div class="activity-heading">近期動態</div>
@@ -336,20 +312,19 @@
       </div>
     </div>
 
-    <!-- Article view -->
+    <!-- Article -->
     <div class="article-view" id="articlePanel" style="display:none">
       <div class="article-hdr">
         <div class="article-hdr-main">
           <div class="article-cat-row">
             <span class="sb-item-cat" id="viewCat"></span>
+            <span id="viewSubCat" style="font-size:11px;color:var(--ink3)"></span>
             <span style="font-size:11px;font-family:var(--mono);color:var(--ink3)" id="viewVer"></span>
           </div>
           <div class="article-title" id="viewTitle"></div>
           <div class="article-meta">
-            <span id="viewCreated"></span>
-            <span id="viewUpdated"></span>
-            <span id="viewAuthor"></span>
-            <span id="viewLastEditor"></span>
+            <span id="viewCreated"></span><span id="viewUpdated"></span>
+            <span id="viewAuthor"></span><span id="viewLastEditor"></span>
           </div>
         </div>
         <div class="article-actions">
@@ -365,7 +340,7 @@
         <div class="article-content" id="viewContent"></div>
         <div class="article-tags" id="viewTags"></div>
       </div>
-      <div class="ver-panel" id="verPanel">
+      <div class="ver-panel">
         <div class="ver-title">版本歷史</div>
         <div id="verList"></div>
       </div>
@@ -388,13 +363,13 @@
             <input type="text" class="form-input" id="fTitle" placeholder="文章標題"/>
           </div>
           <div class="form-group">
-            <label class="form-label">分類 *</label>
-            <select class="form-select" id="fCat">
-              <option value="sop">SOP 作業程序</option>
-              <option value="faq">FAQ 常見問答</option>
-              <option value="policy">規範 / 規則</option>
-              <option value="notice">注意事項</option>
-              <option value="other">其他</option>
+            <label class="form-label">大分類 *</label>
+            <select class="form-select" id="fCat" onchange="syncSubCatOptions()"></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">小分類</label>
+            <select class="form-select" id="fSubCat">
+              <option value="">（不指定）</option>
             </select>
           </div>
         </div>
@@ -402,9 +377,9 @@
           <label class="form-label">關鍵字 / 標籤（逗號分隔）</label>
           <input type="text" class="form-input" id="fTags" placeholder="例：退換貨, 物流異常, ETA"/>
         </div>
-        <div class="form-group" style="flex:1">
+        <div class="form-group">
           <label class="form-label">內容 *</label>
-          <textarea class="form-textarea" id="fContent" placeholder="輸入文章內容…" style="flex:1;min-height:300px"></textarea>
+          <textarea class="form-textarea" id="fContent" placeholder="輸入文章內容…" style="min-height:300px"></textarea>
         </div>
         <div class="form-group">
           <label class="form-label">編輯摘要（此版本修改說明）</label>
@@ -412,457 +387,488 @@
         </div>
       </div>
     </div>
-
   </main>
 </div>
 
-<!-- Firebase SDK (compat) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script>
-  const firebaseConfig = {
-    apiKey:            "AIzaSyBr1bq3WUhjjXH9rvKLgVa-DFK1vrg5QeM",
-    authDomain:        "opshub-knowledge.firebaseapp.com",
-    projectId:         "opshub-knowledge",
-    storageBucket:     "opshub-knowledge.firebasestorage.app",
-    messagingSenderId: "257794213641",
-    appId:             "1:257794213641:web:df105659dee73c393d75d8"
-  };
-
-  firebase.initializeApp(firebaseConfig);
+  firebase.initializeApp({
+    apiKey:"AIzaSyBr1bq3WUhjjXH9rvKLgVa-DFK1vrg5QeM",
+    authDomain:"opshub-knowledge.firebaseapp.com",
+    projectId:"opshub-knowledge",
+    storageBucket:"opshub-knowledge.firebasestorage.app",
+    messagingSenderId:"257794213641",
+    appId:"1:257794213641:web:df105659dee73c393d75d8"
+  });
   const db = firebase.firestore();
 
-  let allDocs = [];
-  let currentDoc = null;
-  let editingDoc = null;
-  let activeFilter = 'all';
+  // ── State ──────────────────────────────────────────────────
+  let allDocs    = [];
+  let categories = [];
+  let currentDoc = null, editingDoc = null;
+  let activeFilter = { cat:'home', sub:null };
+  let expandedCats = new Set();
+  let modalCb = null;
 
-  const CAT = {
-    sop:    { label: 'SOP',  cls: 'cat-sop'    },
-    faq:    { label: 'FAQ',  cls: 'cat-faq'    },
-    policy: { label: '規範', cls: 'cat-policy' },
-    notice: { label: '注意', cls: 'cat-notice' },
-    other:  { label: '其他', cls: 'cat-other'  },
-  };
+  const DEFAULT_CATS = [
+    {id:'sop',    label:'SOP 作業程序', icon:'📌', order:0, subcategories:[]},
+    {id:'faq',    label:'FAQ 常見問答',  icon:'💬', order:1, subcategories:[]},
+    {id:'policy', label:'規範 / 規則',   icon:'📜', order:2, subcategories:[]},
+    {id:'notice', label:'注意事項',      icon:'⚠️', order:3, subcategories:[]},
+    {id:'other',  label:'其他',          icon:'📁', order:4, subcategories:[]},
+  ];
+  const CAT_CLS = {sop:'cat-sop',faq:'cat-faq',policy:'cat-policy',notice:'cat-notice',other:'cat-other'};
 
-  function catBadge(key) {
-    const c = CAT[key] || CAT.other;
-    return `<span class="sb-item-cat ${c.cls}">${c.label}</span>`;
+  function catCls(id){ return CAT_CLS[id]||'cat-custom'; }
+  function catLabel(id){ const c=categories.find(c=>c.id===id); return c?c.label:id; }
+  function catBadge(id){ return `<span class="sb-item-cat ${catCls(id)}">${esc(catLabel(id))}</span>`; }
+
+  function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  function toast(msg,type=''){
+    const el=document.getElementById('toast');
+    el.textContent=msg; el.className=`toast show ${type}`;
+    setTimeout(()=>el.className='toast',2800);
   }
 
-  function toast(msg, type='') {
-    const el = document.getElementById('toast');
-    el.textContent = msg;
-    el.className = `toast show ${type}`;
-    setTimeout(() => el.className = 'toast', 2800);
+  function fmtDate(ts){
+    if(!ts) return '';
+    const d=ts.toDate?ts.toDate():new Date(ts);
+    return d.toLocaleDateString('zh-TW')+' '+d.toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});
   }
 
-  function fmtDate(ts) {
-    if (!ts) return '';
-    const d = (ts && ts.toDate) ? ts.toDate() : new Date(ts);
-    return d.toLocaleDateString('zh-TW') + ' ' + d.toLocaleTimeString('zh-TW', { hour:'2-digit', minute:'2-digit' });
+  function hideLoading(){ document.getElementById('loadingOverlay').style.display='none'; }
+
+  // ── Modal ──────────────────────────────────────────────────
+  function openModal(title, placeholder, cb){
+    document.getElementById('modalTitle').textContent=title;
+    document.getElementById('modalInput').value='';
+    document.getElementById('modalInput').placeholder=placeholder;
+    modalCb=cb;
+    document.getElementById('modalBackdrop').style.display='flex';
+    setTimeout(()=>document.getElementById('modalInput').focus(),50);
+  }
+  function closeModal(){ document.getElementById('modalBackdrop').style.display='none'; modalCb=null; }
+  function confirmModal(){
+    const val=document.getElementById('modalInput').value.trim();
+    if(!val){ document.getElementById('modalInput').focus(); return; }
+    closeModal(); if(modalCb) modalCb(val);
   }
 
-  function hideLoading() {
-    document.getElementById('loadingOverlay').style.display = 'none';
-  }
-
-  // ── 近期動態 ──────────────────────────────────────────────
-  async function loadRecentActivity() {
-    const container = document.getElementById('activityContent');
-    const badge     = document.getElementById('activityCountBadge');
-
-    // 只在 welcomePanel 顯示時才需要更新（節省讀取次數）
-    // 但每次 allDocs 更新都重算，因為資料已在記憶體中
-
-    // 取最近 20 筆 knowledge（已按 updatedAt desc）
-    const recentDocs = allDocs.slice(0, 20);
-
-    // 讀取 audit_log（刪除記錄）最近 10 筆
-    let deletedItems = [];
-    try {
-      const auditSnap = await db.collection('audit_log')
-        .orderBy('timestamp', 'desc').limit(10).get();
-      deletedItems = auditSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-    } catch(e) { /* audit_log 可能為空，忽略錯誤 */ }
-
-    // 合併並統一格式
-    const combined = [];
-
-    recentDocs.forEach(d => {
-      const isNew = (d.version || 1) === 1;
-      combined.push({
-        type:      isNew ? 'create' : 'edit',
-        title:     d.title || '（無標題）',
-        category:  d.category,
-        operator:  d.lastEditedBy || d.author || '',
-        ts:        d.updatedAt,
-        docRef:    d
-      });
-    });
-
-    deletedItems.forEach(a => {
-      combined.push({
-        type:     'delete',
-        title:    a.title || '（已刪除）',
-        category: null,
-        operator: a.operator || '',
-        ts:       a.timestamp,
-        docRef:   null
-      });
-    });
-
-    // 按時間排序（最新在前）
-    combined.sort((a, b) => {
-      const ta = a.ts && a.ts.toDate ? a.ts.toDate() : new Date(0);
-      const tb = b.ts && b.ts.toDate ? b.ts.toDate() : new Date(0);
-      return tb - ta;
-    });
-
-    const total = combined.length;
-    badge.textContent = total + ' 則動態';
-
-    if (total === 0) {
-      container.innerHTML = `
-        <div class="activity-empty">
-          <div class="activity-empty-icon">📚</div>
-          <div class="activity-empty-text">知識資料庫<br>集中管理客服 SOP、FAQ 與規範，全部即時儲存至 Firestore。</div>
-          <button class="activity-new-btn" onclick="openEditor(null)">＋ 新增第一篇文章</button>
-        </div>`;
-      return;
+  // ── Category CRUD ──────────────────────────────────────────
+  async function initCategories(){
+    const snap = await db.collection('categories').orderBy('order').get();
+    if(snap.empty){
+      const batch=db.batch();
+      DEFAULT_CATS.forEach(c=>batch.set(db.collection('categories').doc(c.id),c));
+      await batch.commit();
+      categories=DEFAULT_CATS.map(c=>({...c}));
+    } else {
+      categories=snap.docs.map(d=>({id:d.id,...d.data()}));
+      categories.forEach(c=>{ if(!c.subcategories) c.subcategories=[]; });
     }
+    renderTree(); syncCatOptions();
+  }
 
-    // 按「今天 / 近7天 / 更早」分組
-    const now   = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const week  = new Date(today); week.setDate(week.getDate() - 7);
+  async function addCategory(label){
+    const id='cat_'+Date.now();
+    const nc={id,label,icon:'📁',order:categories.length,subcategories:[]};
+    await db.collection('categories').doc(id).set(nc);
+    categories.push(nc); expandedCats.add(id);
+    renderTree(); syncCatOptions(); toast('✓ 大分類已新增','success');
+  }
 
-    const groups = [
-      { key: 'today',  label: '今天',   items: [] },
-      { key: 'week',   label: '近 7 天', items: [] },
-      { key: 'older',  label: '更早',   items: [] },
-    ];
+  async function deleteCategory(id){
+    const c=categories.find(c=>c.id===id);
+    if(!c) return;
+    const cnt=allDocs.filter(d=>d.category===id).length;
+    const msg=cnt>0?`「${c.label}」下有 ${cnt} 篇文章，刪除後分類將變成無效。確定？`:`確定刪除「${c.label}」？`;
+    if(!confirm(msg)) return;
+    await db.collection('categories').doc(id).delete();
+    categories=categories.filter(c=>c.id!==id);
+    if(activeFilter.cat===id) activeFilter={cat:'all',sub:null};
+    renderTree(); syncCatOptions(); renderList(); toast('分類已刪除');
+  }
 
-    combined.forEach(item => {
-      const d = item.ts && item.ts.toDate ? item.ts.toDate() : null;
-      if (!d) { groups[2].items.push(item); return; }
-      if (d >= today)       groups[0].items.push(item);
-      else if (d >= week)   groups[1].items.push(item);
-      else                  groups[2].items.push(item);
-    });
+  async function addSubCategory(catId,label){
+    const c=categories.find(c=>c.id===catId); if(!c) return;
+    const subId='sub_'+Date.now();
+    c.subcategories=c.subcategories||[];
+    c.subcategories.push({id:subId,label});
+    await db.collection('categories').doc(catId).update({subcategories:c.subcategories});
+    expandedCats.add(catId); renderTree(); syncCatOptions(); toast('✓ 小分類已新增','success');
+  }
 
-    const BADGE = {
-      create: { cls: 'badge-create', label: '新增' },
-      edit:   { cls: 'badge-edit',   label: '修改' },
-      delete: { cls: 'badge-delete', label: '刪除' },
-    };
+  async function deleteSubCategory(catId,subId){
+    const c=categories.find(c=>c.id===catId); if(!c) return;
+    const sub=(c.subcategories||[]).find(s=>s.id===subId); if(!sub) return;
+    if(!confirm(`確定刪除小分類「${sub.label}」？`)) return;
+    c.subcategories=c.subcategories.filter(s=>s.id!==subId);
+    await db.collection('categories').doc(catId).update({subcategories:c.subcategories});
+    if(activeFilter.cat===catId&&activeFilter.sub===subId) activeFilter={cat:catId,sub:null};
+    renderTree(); syncCatOptions(); renderList(); toast('小分類已刪除');
+  }
 
-    let html = '';
-    groups.forEach(g => {
-      if (g.items.length === 0) return;
-      html += `<div class="activity-section">
-        <div class="activity-section-title">${g.label}</div>`;
+  // ── Render tree ────────────────────────────────────────────
+  function renderTree(){
+    const tree=document.getElementById('sbTree');
+    tree.innerHTML='';
 
-      g.items.forEach(item => {
-        const b   = BADGE[item.type] || BADGE.edit;
-        const d   = item.ts && item.ts.toDate ? item.ts.toDate() : null;
-        const day = d ? d.getDate() : '—';
-        const mon = d ? (d.getMonth()+1) + '月' : '';
-        const time = d ? d.toLocaleTimeString('zh-TW', {hour:'2-digit', minute:'2-digit'}) : '';
-        const catBadgeHtml = item.category ? catBadge(item.category) : '';
-        const isDeleted = item.type === 'delete';
-        const clickable = !isDeleted ? `onclick="viewDoc(${JSON.stringify({...item.docRef}).replace(/"/g,'&quot;')})"` : '';
-        const arrowHtml = !isDeleted ? `<div class="activity-arrow"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>` : '';
+    // 首頁
+    const homeActive=activeFilter.cat==='home';
+    const homeLi=document.createElement('li');
+    homeLi.innerHTML=`<button class="sb-flat-btn${homeActive?' active':''}" onclick="showHome()"><span style="font-size:14px">🏠</span> 首頁</button>`;
+    tree.appendChild(homeLi);
 
-        html += `<div class="activity-item${isDeleted ? ' deleted' : ''}" ${!isDeleted ? `onclick="viewDoc(allDocs.find(x=>x.id==='${item.docRef ? item.docRef.id : ''}')||null)"` : ''}>
-          <div class="activity-date">
-            <span class="activity-date-day">${day}</span>
-            ${mon}<br><span style="font-size:10px">${time}</span>
+    // 全部
+    const allActive=activeFilter.cat==='all';
+    const allLi=document.createElement('li');
+    allLi.innerHTML=`<button class="sb-flat-btn${allActive?' active':''}" onclick="setFilter('all',null)"><span style="font-size:14px">📋</span> 全部<span class="sb-flat-cnt">${allDocs.length}</span></button>`;
+    tree.appendChild(allLi);
+
+    // 分類標題列
+    const labelLi=document.createElement('li');
+    labelLi.innerHTML=`<div class="sb-tree-label">分類
+      <button class="sb-section-add" title="新增大分類" onclick="openModal('新增大分類','例：物流問題',v=>addCategory(v))">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+    </div>`;
+    tree.appendChild(labelLi);
+
+    // 各大分類
+    categories.forEach(cat=>{
+      const isExp=expandedCats.has(cat.id);
+      const catActive=activeFilter.cat===cat.id&&activeFilter.sub===null;
+      const catCnt=allDocs.filter(d=>d.category===cat.id).length;
+      const subs=cat.subcategories||[];
+
+      const li=document.createElement('li');
+      li.className='cat-group';
+
+      let subHtml='';
+      subs.forEach(sub=>{
+        const subActive=activeFilter.cat===cat.id&&activeFilter.sub===sub.id;
+        const subCnt=allDocs.filter(d=>d.category===cat.id&&d.subcategory===sub.id).length;
+        subHtml+=`<li class="subcat-row${subActive?' active':''}">
+          <button class="subcat-btn" onclick="setFilter('${cat.id}','${sub.id}')">
+            <span class="subcat-dot"></span>
+            <span style="flex:1">${esc(sub.label)}</span>
+            <span class="subcat-cnt">${subCnt}</span>
+          </button>
+          <div class="subcat-actions">
+            <button class="cat-act del" title="刪除小分類" onclick="deleteSubCategory('${cat.id}','${sub.id}')">
+              <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+            </button>
           </div>
-          <span class="activity-badge ${b.cls}">${b.label}</span>
-          <div class="activity-body">
-            <div class="activity-title${isDeleted ? ' deleted' : ''}">${esc(item.title)}</div>
-            <div class="activity-subtitle">
-              ${catBadgeHtml}
-              ${item.operator ? `<span>👤 ${esc(item.operator)}</span>` : ''}
-            </div>
-          </div>
-          ${arrowHtml}
-        </div>`;
+        </li>`;
       });
 
-      html += `</div>`;
-    });
-
-    container.innerHTML = html;
-  }
-
-  function init() {
-    // Timeout fallback — if Firestore doesn't respond in 8s, show error
-    const timeout = setTimeout(() => {
-      hideLoading();
-      document.getElementById('connDot').classList.add('offline');
-      document.getElementById('connLabel').textContent = '連線逾時';
-      toast('Firestore 連線逾時，請確認安全規則已設為允許讀取', 'error');
-    }, 8000);
-
-    db.collection('knowledge').orderBy('updatedAt', 'desc').onSnapshot(snap => {
-      clearTimeout(timeout);
-      allDocs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      renderList();
-      loadRecentActivity();
-      hideLoading();
-      document.getElementById('connDot').classList.remove('offline');
-      document.getElementById('connLabel').textContent = allDocs.length + ' 篇';
-    }, err => {
-      clearTimeout(timeout);
-      console.error(err);
-      hideLoading();
-      document.getElementById('connDot').classList.add('offline');
-      document.getElementById('connLabel').textContent = '連線失敗';
-      toast('連線失敗：' + err.message, 'error');
+      li.innerHTML=`
+        <div class="cat-group-row${catActive?' active':''}">
+          <button class="cat-toggle" onclick="handleCatClick(event,'${cat.id}')">
+            <span class="cat-arrow${isExp?' open':''}">▶</span>
+            <span style="font-size:14px">${cat.icon||'📁'}</span>
+            <span style="flex:1">${esc(cat.label)}</span>
+            <span class="cat-cnt">${catCnt}</span>
+          </button>
+          <div class="cat-row-actions">
+            <button class="cat-act" title="新增小分類" onclick="openModal('新增小分類 — ${esc(cat.label)}','例：玩具相關',v=>addSubCategory('${cat.id}',v))">
+              <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+            <button class="cat-act del" title="刪除分類" onclick="deleteCategory('${cat.id}')">
+              <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+            </button>
+          </div>
+        </div>
+        <ul class="subcat-list${isExp?' open':''}" id="sub_${cat.id}">
+          ${subHtml}
+          <li class="subcat-add-row">
+            <button class="subcat-add-link" onclick="openModal('新增小分類 — ${esc(cat.label)}','例：玩具相關',v=>addSubCategory('${cat.id}',v))">＋ 新增小分類</button>
+          </li>
+        </ul>`;
+      tree.appendChild(li);
     });
   }
 
-  function renderList() {
-    const q = document.getElementById('searchInput').value.toLowerCase().trim();
-    const items = allDocs.filter(d => {
-      const matchFilter = activeFilter === 'all' || d.category === activeFilter;
-      if (!matchFilter) return false;
-      if (!q) return true;
+  // Click on cat toggle: left half = select, arrow = expand
+  function handleCatClick(e, catId){
+    // Check if click target is near the arrow (first ~22px)
+    const btn = e.currentTarget;
+    const rect = btn.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    if(x < 22){
+      // toggle expand
+      if(expandedCats.has(catId)) expandedCats.delete(catId);
+      else expandedCats.add(catId);
+      renderTree();
+    } else {
+      setFilter(catId, null);
+    }
+  }
+
+  // ── Editor cat/subcat selects ──────────────────────────────
+  function syncCatOptions(){
+    const sel=document.getElementById('fCat');
+    const cur=sel.value;
+    sel.innerHTML=categories.map(c=>`<option value="${c.id}">${esc(c.label)}</option>`).join('');
+    if(categories.find(c=>c.id===cur)) sel.value=cur;
+    syncSubCatOptions();
+  }
+
+  function syncSubCatOptions(selectedSub){
+    const catId=document.getElementById('fCat').value;
+    const cat=categories.find(c=>c.id===catId);
+    const subs=cat?(cat.subcategories||[]):[];
+    const sel=document.getElementById('fSubCat');
+    sel.innerHTML=`<option value="">（不指定）</option>`+
+      subs.map(s=>`<option value="${s.id}">${esc(s.label)}</option>`).join('');
+    if(selectedSub) sel.value=selectedSub;
+  }
+
+  // ── Filter / list ──────────────────────────────────────────
+  function setFilter(cat,sub){
+    activeFilter={cat,sub};
+    if(cat!=='all'&&cat!=='home') expandedCats.add(cat);
+    renderTree(); renderList();
+  }
+
+  function handleSearch(){ renderList(); }
+
+  function renderList(){
+    const q=document.getElementById('searchInput').value.toLowerCase().trim();
+    const items=allDocs.filter(d=>{
+      if(activeFilter.cat!=='all'&&activeFilter.cat!=='home'){
+        if(d.category!==activeFilter.cat) return false;
+        if(activeFilter.sub&&d.subcategory!==activeFilter.sub) return false;
+      }
+      if(!q) return true;
       return (d.title||'').toLowerCase().includes(q)
-          || (d.content||'').toLowerCase().includes(q)
-          || (d.tags||[]).some(t => t.toLowerCase().includes(q));
+          ||(d.content||'').toLowerCase().includes(q)
+          ||(d.tags||[]).some(t=>t.toLowerCase().includes(q));
     });
 
-    const list  = document.getElementById('sbList');
-    const empty = document.getElementById('sbEmpty');
-    list.querySelectorAll('.sb-item').forEach(e => e.remove());
-    empty.style.display = items.length === 0 ? '' : 'none';
+    const list=document.getElementById('sbList');
+    const empty=document.getElementById('sbEmpty');
+    list.querySelectorAll('.sb-item').forEach(e=>e.remove());
+    empty.style.display=items.length===0?'':'none';
 
-    items.forEach(d => {
-      const el = document.createElement('div');
-      el.className = 'sb-item' + (currentDoc && currentDoc.id === d.id ? ' active' : '');
-      el.dataset.id = d.id;
-      el.onclick = () => viewDoc(d);
-      el.innerHTML = `
-        <div class="sb-item-title">${esc(d.title || '（無標題）')}</div>
+    items.forEach(d=>{
+      const el=document.createElement('div');
+      el.className='sb-item'+(currentDoc&&currentDoc.id===d.id?' active':'');
+      el.dataset.id=d.id;
+      el.onclick=()=>viewDoc(d);
+      const cat=categories.find(c=>c.id===d.category);
+      const sub=cat&&d.subcategory?(cat.subcategories||[]).find(s=>s.id===d.subcategory):null;
+      el.innerHTML=`
+        <div class="sb-item-title">${esc(d.title||'（無標題）')}</div>
         <div class="sb-item-meta">
           ${catBadge(d.category)}
+          ${sub?`<span style="font-size:10px;color:var(--ink3)">／${esc(sub.label)}</span>`:''}
           <span>${fmtDate(d.updatedAt)}</span>
-          <span class="sb-count">v${d.version||1}</span>
+          <span class="sb-cnt">v${d.version||1}</span>
         </div>
-        <div class="sb-item-snippet">${esc((d.content||'').slice(0,60))}…</div>
-      `;
+        <div class="sb-item-snippet">${esc((d.content||'').slice(0,60))}…</div>`;
       list.appendChild(el);
     });
-
-    // Update nav item active states
-    document.querySelectorAll('.sb-nav-item').forEach(btn => {
-      const f = btn.id.replace('filter-','');
-      btn.classList.toggle('active', f === activeFilter);
-    });
-
-    // Update counts
-    const counts = { all: allDocs.length, sop:0, faq:0, policy:0, notice:0, other:0 };
-    allDocs.forEach(d => { if (counts[d.category] !== undefined) counts[d.category]++; else counts.other++; });
-    Object.keys(counts).forEach(k => {
-      const el = document.getElementById('cnt-' + k);
-      if (el) el.textContent = counts[k];
-    });
   }
 
-  function esc(s) {
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  }
-
-  async function viewDoc(d) {
-    currentDoc = d;
-    document.querySelectorAll('.sb-item').forEach(el => {
-      el.classList.toggle('active', el.dataset.id === d.id);
-    });
-
-    document.getElementById('viewCat').className = `sb-item-cat ${CAT[d.category] ? CAT[d.category].cls : 'cat-other'}`;
-    document.getElementById('viewCat').textContent = CAT[d.category] ? CAT[d.category].label : '其他';
-    document.getElementById('viewVer').textContent = 'v' + (d.version||1);
-    document.getElementById('viewTitle').textContent = d.title || '';
-    document.getElementById('viewContent').textContent = d.content || '';
-    document.getElementById('viewCreated').textContent = '建立：' + fmtDate(d.createdAt);
-    document.getElementById('viewUpdated').textContent = '更新：' + fmtDate(d.updatedAt);
-    document.getElementById('viewAuthor').textContent  = d.author ? '建立：' + d.author : '';
-    document.getElementById('viewLastEditor').innerHTML = d.lastEditedBy
-      ? `<span style="display:inline-flex;align-items:center;gap:4px;background:var(--accent-bg);color:var(--accent2);padding:1px 8px;border-radius:10px;font-size:10px;">✏️ 最後編輯：${d.lastEditedBy}</span>`
-      : '';
-
-    const tagsEl = document.getElementById('viewTags');
-    tagsEl.innerHTML = (d.tags||[]).map(t => `<span class="tag-chip">${esc(t)}</span>`).join('');
-
-    try {
-      const verSnap = await db.collection('knowledge').doc(d.id).collection('versions').orderBy('savedAt', 'desc').get();
-      const verList = document.getElementById('verList');
-      verList.innerHTML = '';
-      if (verSnap.empty) {
-        verList.innerHTML = '<div style="font-size:12px;color:var(--ink3);font-family:var(--mono)">尚無歷史版本</div>';
-      } else {
-        verSnap.docs.forEach(v => {
-          const vd = v.data();
-          const el = document.createElement('div');
-          el.className = 'ver-item';
-          const actionCls = vd.action === 'create' ? 'ver-action-create' : 'ver-action-edit';
-          const actionLabel = vd.action === 'create' ? '新增' : '編輯';
-          el.innerHTML = `
-            <span class="ver-num">v${vd.version}</span>
-            <span>${esc(vd.title||'')}</span>
-            ${vd.operator ? `<span class="ver-operator">👤 ${esc(vd.operator)}</span>` : ''}
-            <span class="ver-action ${actionCls}">${actionLabel}</span>
-            <span style="margin-left:auto;color:var(--ink3)">${fmtDate(vd.savedAt)}</span>
-            ${vd.summary ? `<span style="color:var(--ink3);font-size:11px">— ${esc(vd.summary)}</span>` : ''}
-          `;
-          verList.appendChild(el);
-        });
-      }
-    } catch(e) {}
-
+  // ── View article ───────────────────────────────────────────
+  async function viewDoc(d){
+    if(!d) return;
+    currentDoc=d;
+    document.querySelectorAll('.sb-item').forEach(el=>el.classList.toggle('active',el.dataset.id===d.id));
+    const cat=categories.find(c=>c.id===d.category);
+    const sub=cat&&d.subcategory?(cat.subcategories||[]).find(s=>s.id===d.subcategory):null;
+    document.getElementById('viewCat').className=`sb-item-cat ${catCls(d.category)}`;
+    document.getElementById('viewCat').textContent=catLabel(d.category);
+    document.getElementById('viewSubCat').textContent=sub?'／'+sub.label:'';
+    document.getElementById('viewVer').textContent='v'+(d.version||1);
+    document.getElementById('viewTitle').textContent=d.title||'';
+    document.getElementById('viewContent').textContent=d.content||'';
+    document.getElementById('viewCreated').textContent='建立：'+fmtDate(d.createdAt);
+    document.getElementById('viewUpdated').textContent='更新：'+fmtDate(d.updatedAt);
+    document.getElementById('viewAuthor').textContent=d.author?'作者：'+d.author:'';
+    document.getElementById('viewLastEditor').innerHTML=d.lastEditedBy
+      ?`<span style="display:inline-flex;align-items:center;gap:4px;background:var(--accent-bg);color:var(--accent2);padding:1px 8px;border-radius:10px;font-size:10px">✏️ 最後編輯：${d.lastEditedBy}</span>`:'';
+    const tagsEl=document.getElementById('viewTags');
+    tagsEl.innerHTML=(d.tags||[]).map(t=>`<span class="tag-chip">${esc(t)}</span>`).join('');
+    try{
+      const vs=await db.collection('knowledge').doc(d.id).collection('versions').orderBy('savedAt','desc').get();
+      const vl=document.getElementById('verList');
+      vl.innerHTML='';
+      if(vs.empty){ vl.innerHTML='<div style="font-size:12px;color:var(--ink3);font-family:var(--mono)">尚無歷史版本</div>'; }
+      else{ vs.docs.forEach(v=>{ const vd=v.data(); const el=document.createElement('div'); el.className='ver-item';
+        const ac=vd.action==='create'?'ver-action-create':'ver-action-edit';
+        const al=vd.action==='create'?'新增':'編輯';
+        el.innerHTML=`<span class="ver-num">v${vd.version}</span><span>${esc(vd.title||'')}</span>${vd.operator?`<span class="ver-operator">👤 ${esc(vd.operator)}</span>`:''}<span class="ver-action ${ac}">${al}</span><span style="margin-left:auto;color:var(--ink3)">${fmtDate(vd.savedAt)}</span>${vd.summary?`<span style="color:var(--ink3);font-size:11px">— ${esc(vd.summary)}</span>`:''}`;
+        vl.appendChild(el); }); }
+    }catch(e){}
     show('article');
   }
 
-  function openEditor(d) {
-    editingDoc = d;
-    document.getElementById('editorTitle').textContent = d ? '編輯文章' : '新增文章';
-    document.getElementById('fTitle').value   = d ? (d.title   || '') : '';
-    document.getElementById('fCat').value     = d ? (d.category|| 'sop') : 'sop';
-    document.getElementById('fTags').value    = d ? ((d.tags||[]).join(', ')) : '';
-    document.getElementById('fContent').value = d ? (d.content || '') : '';
-    document.getElementById('fSummary').value = '';
+  // ── Editor ─────────────────────────────────────────────────
+  function openEditor(d){
+    editingDoc=d;
+    document.getElementById('editorTitle').textContent=d?'編輯文章':'新增文章';
+    document.getElementById('fTitle').value=d?(d.title||''):'';
+    document.getElementById('fTags').value=d?((d.tags||[]).join(', ')):'';
+    document.getElementById('fContent').value=d?(d.content||''):'';
+    document.getElementById('fSummary').value='';
+    syncCatOptions();
+    if(d){ document.getElementById('fCat').value=d.category||categories[0]?.id||''; syncSubCatOptions(d.subcategory||''); }
+    else{ document.getElementById('fCat').value=categories[0]?.id||''; syncSubCatOptions(); }
     show('editor');
   }
 
-  function closeEditor() {
-    if (currentDoc) show('article');
-    else            show('welcome');
-  }
+  function closeEditor(){ if(currentDoc) show('article'); else show('welcome'); }
 
-  async function saveDoc() {
-    const title   = document.getElementById('fTitle').value.trim();
-    const content = document.getElementById('fContent').value.trim();
-    const cat     = document.getElementById('fCat').value;
-    const tags    = document.getElementById('fTags').value.split(',').map(t=>t.trim()).filter(Boolean);
-    const summary = document.getElementById('fSummary').value.trim();
-
-    if (!title || !content) { toast('請填寫標題與內容', 'error'); return; }
-
-    const btn = document.getElementById('saveBtn');
-    btn.disabled = true;
-    btn.textContent = '儲存中…';
-
-    try {
-      if (editingDoc) {
-        const newVer = (editingDoc.version||1) + 1;
+  async function saveDoc(){
+    const title=document.getElementById('fTitle').value.trim();
+    const content=document.getElementById('fContent').value.trim();
+    const cat=document.getElementById('fCat').value;
+    const subcat=document.getElementById('fSubCat').value;
+    const tags=document.getElementById('fTags').value.split(',').map(t=>t.trim()).filter(Boolean);
+    const summary=document.getElementById('fSummary').value.trim();
+    if(!title||!content){ toast('請填寫標題與內容','error'); return; }
+    const btn=document.getElementById('saveBtn');
+    btn.disabled=true; btn.textContent='儲存中…';
+    try{
+      const payload={title,content,category:cat,subcategory:subcat||null,tags,
+        updatedAt:firebase.firestore.FieldValue.serverTimestamp(),
+        lastEditedBy:_kbUser,lastEditedUser:_kbUsername};
+      if(editingDoc){
+        const nv=(editingDoc.version||1)+1;
         await db.collection('knowledge').doc(editingDoc.id).collection('versions').add({
-          version:   editingDoc.version||1,
-          title:     editingDoc.title,
-          content:   editingDoc.content,
-          category:  editingDoc.category,
-          tags:      editingDoc.tags||[],
-          savedAt:   firebase.firestore.FieldValue.serverTimestamp(),
-          summary:   summary||'（無描述）',
-          operator:  _kbUser,
-          username:  _kbUsername,
-          action:    'edit'
-        });
+          version:editingDoc.version||1,title:editingDoc.title,content:editingDoc.content,
+          category:editingDoc.category,subcategory:editingDoc.subcategory||null,
+          tags:editingDoc.tags||[],savedAt:firebase.firestore.FieldValue.serverTimestamp(),
+          summary:summary||'（無描述）',operator:_kbUser,username:_kbUsername,action:'edit'});
         await db.collection('knowledge').doc(editingDoc.id).set({
-          title, content, category: cat, tags,
-          version:        newVer,
-          updatedAt:      firebase.firestore.FieldValue.serverTimestamp(),
-          createdAt:      editingDoc.createdAt,
-          author:         editingDoc.author || _kbUser,
-          lastEditedBy:   _kbUser,
-          lastEditedUser: _kbUsername
-        });
-        toast('✓ 文章已更新', 'success');
-        show('article');
+          ...payload,version:nv,createdAt:editingDoc.createdAt,author:editingDoc.author||_kbUser});
+        toast('✓ 文章已更新','success'); show('article');
       } else {
-        const ref = await db.collection('knowledge').add({
-          title, content, category: cat, tags,
-          version:        1,
-          createdAt:      firebase.firestore.FieldValue.serverTimestamp(),
-          updatedAt:      firebase.firestore.FieldValue.serverTimestamp(),
-          author:         _kbUser,
-          authorUsername: _kbUsername,
-          lastEditedBy:   _kbUser,
-          lastEditedUser: _kbUsername
-        });
-        toast('✓ 文章已新增', 'success');
-        // wait for realtime update to populate allDocs, then view
-        setTimeout(() => {
-          const found = allDocs.find(d => d.id === ref.id);
-          if (found) viewDoc(found);
-          else show('welcome');
-        }, 1200);
+        const ref=await db.collection('knowledge').add({
+          ...payload,version:1,createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+          author:_kbUser,authorUsername:_kbUsername});
+        toast('✓ 文章已新增','success');
+        setTimeout(()=>{ const found=allDocs.find(d=>d.id===ref.id); if(found) viewDoc(found); else show('welcome'); },1200);
       }
-    } catch(e) {
-      toast('儲存失敗：' + e.message, 'error');
-    } finally {
-      btn.disabled = false;
-      btn.textContent = '儲存';
-    }
+    }catch(e){ toast('儲存失敗：'+e.message,'error'); }
+    finally{ btn.disabled=false; btn.textContent='儲存'; }
   }
 
-  async function deleteDoc(d) {
-    if (!d) return;
-    if (!confirm(`確定刪除「${d.title}」？此操作無法還原。`)) return;
-    try {
-      // 刪除前寫入 audit log
-      await db.collection('audit_log').add({
-        action:    'delete',
-        docId:     d.id,
-        title:     d.title,
-        operator:  _kbUser,
-        username:  _kbUsername,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-      });
+  async function deleteDoc(d){
+    if(!d) return;
+    if(!confirm(`確定刪除「${d.title}」？此操作無法還原。`)) return;
+    try{
+      await db.collection('audit_log').add({action:'delete',docId:d.id,title:d.title,operator:_kbUser,username:_kbUsername,timestamp:firebase.firestore.FieldValue.serverTimestamp()});
       await db.collection('knowledge').doc(d.id).delete();
-      currentDoc = null;
-      show('welcome');
-      toast('文章已刪除');
-    } catch(e) {
-      toast('刪除失敗：' + e.message, 'error');
+      currentDoc=null; show('welcome'); toast('文章已刪除');
+    }catch(e){ toast('刪除失敗：'+e.message,'error'); }
+  }
+
+  // ── Panels ─────────────────────────────────────────────────
+  function show(panel){
+    document.getElementById('welcomePanel').style.display=panel==='welcome'?'':'none';
+    document.getElementById('articlePanel').style.display=panel==='article'?'':'none';
+    document.getElementById('editorPanel').style.display =panel==='editor' ?'':'none';
+    if(panel==='welcome') loadRecentActivity();
+  }
+
+  function showHome(){
+    currentDoc=null; activeFilter={cat:'home',sub:null};
+    document.querySelectorAll('.sb-item').forEach(el=>el.classList.remove('active'));
+    renderTree(); show('welcome');
+  }
+
+  // ── Recent Activity ────────────────────────────────────────
+  async function loadRecentActivity(){
+    const container=document.getElementById('activityContent');
+    const badge=document.getElementById('activityCountBadge');
+    const recentDocs=allDocs.slice(0,20);
+    let deletedItems=[];
+    try{
+      const as=await db.collection('audit_log').orderBy('timestamp','desc').limit(10).get();
+      deletedItems=as.docs.map(d=>({id:d.id,...d.data()}));
+    }catch(e){}
+    const combined=[];
+    recentDocs.forEach(d=>combined.push({type:(d.version||1)===1?'create':'edit',title:d.title||'（無標題）',category:d.category,operator:d.lastEditedBy||d.author||'',ts:d.updatedAt,docRef:d}));
+    deletedItems.forEach(a=>combined.push({type:'delete',title:a.title||'（已刪除）',category:null,operator:a.operator||'',ts:a.timestamp,docRef:null}));
+    combined.sort((a,b)=>{
+      const ta=a.ts&&a.ts.toDate?a.ts.toDate():new Date(0);
+      const tb=b.ts&&b.ts.toDate?b.ts.toDate():new Date(0);
+      return tb-ta;
+    });
+    badge.textContent=combined.length+' 則動態';
+    if(!combined.length){
+      container.innerHTML=`<div class="activity-empty"><div class="activity-empty-icon">📚</div><div class="activity-empty-text">知識資料庫<br>集中管理客服 SOP、FAQ 與規範，全部即時儲存至 Firestore。</div><button class="activity-new-btn" onclick="openEditor(null)">＋ 新增第一篇文章</button></div>`;
+      return;
     }
+    const now=new Date(), today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+    const week=new Date(today); week.setDate(week.getDate()-7);
+    const groups=[{label:'今天',items:[]},{label:'近 7 天',items:[]},{label:'更早',items:[]}];
+    combined.forEach(item=>{
+      const d=item.ts&&item.ts.toDate?item.ts.toDate():null;
+      if(!d){groups[2].items.push(item);return;}
+      if(d>=today) groups[0].items.push(item);
+      else if(d>=week) groups[1].items.push(item);
+      else groups[2].items.push(item);
+    });
+    const BADGE={create:{cls:'badge-create',label:'新增'},edit:{cls:'badge-edit',label:'修改'},delete:{cls:'badge-delete',label:'刪除'}};
+    let html='';
+    groups.forEach(g=>{
+      if(!g.items.length) return;
+      html+=`<div class="activity-section"><div class="activity-section-title">${g.label}</div>`;
+      g.items.forEach(item=>{
+        const b=BADGE[item.type]||BADGE.edit;
+        const d=item.ts&&item.ts.toDate?item.ts.toDate():null;
+        const day=d?d.getDate():'—', mon=d?(d.getMonth()+1)+'月':'', time=d?d.toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'}):'';
+        const isDel=item.type==='delete';
+        const clickAttr=!isDel&&item.docRef?`onclick="viewDoc(allDocs.find(x=>x.id==='${item.docRef.id}'))"` :'';
+        html+=`<div class="activity-item${isDel?' deleted':''}" ${clickAttr}>
+          <div class="activity-date"><span class="activity-date-day">${day}</span>${mon}<br><span style="font-size:10px">${time}</span></div>
+          <span class="activity-badge ${b.cls}">${b.label}</span>
+          <div class="activity-body">
+            <div class="activity-title${isDel?' deleted':''}">${esc(item.title)}</div>
+            <div class="activity-subtitle">${item.category?catBadge(item.category):''}${item.operator?`<span>👤 ${esc(item.operator)}</span>`:''}</div>
+          </div>
+          ${!isDel?`<div class="activity-arrow"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div>`:''}
+        </div>`;
+      });
+      html+=`</div>`;
+    });
+    container.innerHTML=html;
   }
 
-  function showHome() {
-    currentDoc = null;
-    document.querySelectorAll('.sb-item').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.sb-nav-item').forEach(btn => btn.classList.remove('active'));
-    document.getElementById('nav-home').classList.add('active');
-    show('welcome');
+  // ── Init ───────────────────────────────────────────────────
+  async function init(){
+    const uel=document.getElementById('hdrUser');
+    if(uel){ const i=_kbUser?_kbUser.slice(0,1).toUpperCase():'?'; uel.innerHTML=`<div class="hdr-user-avatar">${i}</div><span class="hdr-user-name">${_kbUser}</span>`; }
+
+    await initCategories();
+
+    const timeout=setTimeout(()=>{
+      hideLoading();
+      document.getElementById('connDot').classList.add('offline');
+      document.getElementById('connLabel').textContent='連線逾時';
+      toast('Firestore 連線逾時，請確認安全規則','error');
+    },8000);
+
+    db.collection('knowledge').orderBy('updatedAt','desc').onSnapshot(snap=>{
+      clearTimeout(timeout);
+      allDocs=snap.docs.map(d=>({id:d.id,...d.data()}));
+      renderTree(); renderList(); loadRecentActivity();
+      hideLoading();
+      document.getElementById('connDot').classList.remove('offline');
+      document.getElementById('connLabel').textContent=allDocs.length+' 篇';
+    },err=>{
+      clearTimeout(timeout); hideLoading();
+      document.getElementById('connDot').classList.add('offline');
+      document.getElementById('connLabel').textContent='連線失敗';
+      toast('連線失敗：'+err.message,'error');
+    });
   }
-
-  function setFilter(f) {
-    document.getElementById('nav-home').classList.remove('active');
-    activeFilter = f;
-    renderList();
-  }
-
-  function handleSearch() { renderList(); }
-
-  function show(panel) {
-    document.getElementById('welcomePanel').style.display = panel === 'welcome' ? '' : 'none';
-    document.getElementById('articlePanel').style.display = panel === 'article' ? '' : 'none';
-    document.getElementById('editorPanel').style.display  = panel === 'editor'  ? '' : 'none';
-    if (panel === 'welcome') loadRecentActivity();
-  }
-
-  // 顯示 header 帳號資訊
-  (function renderUser() {
-    const el = document.getElementById('hdrUser');
-    if (!el) return;
-    const initials = _kbUser ? _kbUser.slice(0,1).toUpperCase() : '?';
-    el.innerHTML = `
-      <div class="hdr-user-avatar">${initials}</div>
-      <span class="hdr-user-name">${_kbUser}</span>
-    `;
-  })();
 
   init();
 </script>
