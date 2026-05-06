@@ -321,10 +321,10 @@
       showCard(cardClaims,     'claims',     'vendor');
       const cardKnowledge = document.getElementById('card-knowledge');
       if (cardKnowledge) showCard(cardKnowledge, 'knowledge', 'all');
-      // 排班工具：僅在首頁（tab=all）顯示，一線/廠商分頁不顯示
+      // 排班工具：僅管理員可使用，且只在首頁（tab=all）顯示
       const cardSched = document.getElementById('card-scheduling');
       if (cardSched) {
-        const hasSched = (s && s.role === 'admin') || tools.logistics || tools.claims;
+        const hasSched = s && s.role === 'admin';
         cardSched.style.display = (tab === 'all' && hasSched) ? '' : 'none';
       }
 
