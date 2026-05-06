@@ -121,29 +121,29 @@ function showMappingPreview() {
     c_vendor:      autoFind(claimsHeaders, ['廠商名稱','廠商']),
     c_orderNo:     autoFind(claimsHeaders, ['訂單編號','訂單']),
     c_barcode2:    autoFind(claimsHeaders, ['第二段條碼','條碼']),
-    c_reason:      autoFind(claimsHeaders, ['賠付原因','處理內容','處理']),
-    c_amount:      autoFind(claimsHeaders, ['總賠償','賠償金額','金額']),
+    c_reason:      autoFind(claimsHeaders, ['賠付原因(處理內容)','賠付原因','處理內容','處理']),
+    c_amount:      autoFind(claimsHeaders, ['賠付金額(含運費)','總賠償','賠償金額','金額']),
     c_closeDate:   autoFind(claimsHeaders, ['結案日','結案']),
     // Query
-    q_vendorOrder: autoFind(queryHeaders,  ['廠商訂編','廠商訂單']),
+    q_orderKey:    autoFind(queryHeaders,  ['訂單編號','訂單','單號']),
+    q_vendorOrder: autoFind(queryHeaders,  ['廠商訂單編號','廠商訂編','廠商訂單']),
     q_orderNote:   autoFind(queryHeaders,  ['訂單備註','備註']),
     q_senderName:  autoFind(queryHeaders,  ['寄件人姓名','寄件人']),
     q_recverName:  autoFind(queryHeaders,  ['取件人','收件人']),
     q_sendDate:    autoFind(queryHeaders,  ['寄件日期','寄件時間']),
     q_arriveDate:  autoFind(queryHeaders,  ['進店日期時間','進店日期','進店']),
-    q_orderKey:    autoFind(queryHeaders,  ['訂單編號','訂單','單號']),
     // Store
     s_storeNo:     autoFind(storeHeaders,  ['店號','門市編號']),
     s_storeName:   autoFind(storeHeaders,  ['店名','門市名稱']),
     s_storeType:   autoFind(storeHeaders,  ['店型','門市類型']),
-    s_dept:        autoFind(storeHeaders,  ['所別','營業部','部別']),
-    s_section:     autoFind(storeHeaders,  ['課別','營業課','課']),
+    s_dept:        autoFind(storeHeaders,  ['營業部名稱','所別','營業部','部別']),
+    s_section:     autoFind(storeHeaders,  ['營業課名稱','課別','營業課','課']),
     // PrevStore
     p_storeNo:     autoFind(prevHeaders,   ['店號','門市編號']),
     p_storeName:   autoFind(prevHeaders,   ['店名','門市名稱']),
     p_storeType:   autoFind(prevHeaders,   ['店型','門市類型']),
-    p_dept:        autoFind(prevHeaders,   ['所別','營業部名稱','部別']),
-    p_section:     autoFind(prevHeaders,   ['課別','營業課名稱','課']),
+    p_dept:        autoFind(prevHeaders,   ['營業部名稱','所別','營業部','部別']),
+    p_section:     autoFind(prevHeaders,   ['營業課名稱','課別','營業課','課']),
   };
 
   const makeSelect = (arr, val, key) =>
@@ -347,9 +347,10 @@ async function runSOP() {
         r.歸屬店型 = usedFallback ? (src[cm.p_storeType] || '') : (src[cm.s_storeType] || '');
         r.歸屬所別 = usedFallback ? (src[cm.p_dept]      || '') : (src[cm.s_dept]      || '');
         r.歸屬課別 = usedFallback ? (src[cm.p_section]   || '') : (src[cm.s_section]   || '');
+        if (!r.歸屬店名 && !r.歸屬店型 && !r.歸屬所別 && !r.歸屬課別) r.歸屬店名 = '無資料請確認';
         if (usedFallback) r._fallback = true;
       } else {
-        r.歸屬店名 = ''; r.歸屬店型 = ''; r.歸屬所別 = ''; r.歸屬課別 = '';
+        r.歸屬店名 = '無資料請確認'; r.歸屬店型 = ''; r.歸屬所別 = ''; r.歸屬課別 = '';
       }
     });
     setStep(5, 'done'); await delay(200);
@@ -379,11 +380,13 @@ async function runSOP() {
     // Stats
     const needStore  = outputRows.filter(r => r['壓賠時店號'] === '[需補店號]').length;
     const needName   = outputRows.filter(r => r['消費者姓名'] === '[需補人名]').length;
+    const noStoreData = outputRows.filter(r => r['歸屬店名'] === '無資料請確認').length;
 
     document.getElementById('resultStats').innerHTML = `
       <div class="stat-pill">總筆數 <strong>${outputRows.length}</strong></div>
       <div class="stat-pill">需補店號 <strong style="color:var(--warn)">${needStore}</strong></div>
       <div class="stat-pill">需補人名 <strong style="color:var(--warn)">${needName}</strong></div>
+      <div class="stat-pill">無資料請確認 <strong style="color:var(--warn)">${noStoreData}</strong></div>
       <div class="stat-pill">備援店鋪主檔 <strong>${fallbackCount}</strong></div>
     `;
 
@@ -403,7 +406,7 @@ async function runSOP() {
 function renderPreview(rows) {
   if (!rows.length) return;
   const cols = Object.keys(rows[0]);
-  const WARN_VALS = ['[需補店號]','[需補人名]'];
+  const WARN_VALS = ['[需補店號]','[需補人名]','無資料請確認'];
   document.getElementById('previewTable').innerHTML = `
     <table class="preview-table">
       <thead><tr>${cols.map(c => `<th>${c}</th>`).join('')}</tr></thead>
