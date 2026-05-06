@@ -515,9 +515,9 @@
 
   const DEFAULT_CATS = [
     {id:'sop',    label:'SOP 作業程序', icon:'📌', order:0, subcategories:[]},
-    {id:'faq',    label:'FAQ 常見問答',  icon:'💬', order:1, subcategories:[]},
-    {id:'policy', label:'規範 / 規則',   icon:'📜', order:2, subcategories:[]},
-    {id:'notice', label:'注意事項',      icon:'⚠️', order:3, subcategories:[]},
+    {id:'faq',    label:'常見問題',        icon:'💬', order:1, subcategories:[]},
+    {id:'policy', label:'全家相關通報',    icon:'📜', order:2, subcategories:[]},
+    {id:'notice', label:'近期需注意事項',  icon:'⚠️', order:3, subcategories:[]},
     {id:'other',  label:'其他',          icon:'📁', order:4, subcategories:[]},
   ];
   const CAT_CLS = {sop:'cat-sop',faq:'cat-faq',policy:'cat-policy',notice:'cat-notice',other:'cat-other'};
@@ -559,6 +559,15 @@
   }
 
   // ── Category CRUD ──────────────────────────────────────────
+  // 舊名稱對應新名稱（自動修正 Firestore 現有資料）
+  const CAT_RENAME = {
+    'FAQ 常見問答': '常見問題',
+    'FAQ常見問答':  '常見問題',
+    '規範 / 規則':  '全家相關通報',
+    '規範/規則':    '全家相關通報',
+    '注意事項':     '近期需注意事項',
+  };
+
   async function initCategories(){
     const snap = await db.collection('categories').orderBy('order').get();
     if(snap.empty){
@@ -569,6 +578,14 @@
     } else {
       categories=snap.docs.map(d=>({id:d.id,...d.data()}));
       categories.forEach(c=>{ if(!c.subcategories) c.subcategories=[]; });
+      // 自動修正舊名稱
+      const renameBatch = db.batch();
+      let needUpdate = false;
+      categories.forEach(c=>{
+        const newLabel = CAT_RENAME[c.label];
+        if(newLabel){ c.label = newLabel; renameBatch.update(db.collection('categories').doc(c.id),{label:newLabel}); needUpdate=true; }
+      });
+      if(needUpdate) await renameBatch.commit();
     }
     renderTree(); syncCatOptions();
   }
