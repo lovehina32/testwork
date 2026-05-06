@@ -169,6 +169,21 @@
     .form-select{cursor:pointer}
     .form-select option{background:var(--bg3)}
     .form-textarea{resize:vertical;min-height:220px;line-height:1.7}
+    /* Toolbar */
+    .editor-toolbar{display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap}
+    .toolbar-btn{display:flex;align-items:center;gap:5px;background:var(--bg3);border:1px solid var(--line);border-radius:6px;padding:5px 10px;font-size:12px;font-family:var(--font);cursor:pointer;color:var(--ink2);transition:background .12s,border-color .12s}
+    .toolbar-btn:hover{background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
+    /* Table editor */
+    .te-table{border-collapse:collapse;width:100%}
+    .te-table th,.te-table td{border:1px solid #bbb;padding:0;min-width:80px}
+    .te-table th{background:#f0f4fa}
+    .te-table input{width:100%;border:none;outline:none;padding:6px 8px;font-size:12px;font-family:var(--font);background:transparent;box-sizing:border-box}
+    .te-table th input{font-weight:600;background:#e8edf8}
+    /* 文章內表格樣式 */
+    .article-content table{border-collapse:collapse;width:100%;margin:12px 0;font-size:13px}
+    .article-content th,.article-content td{border:1px solid #ccc;padding:7px 10px;text-align:left}
+    .article-content th{background:#f0f4fa;font-weight:600}
+    .article-content tr:nth-child(even) td{background:#f9fafb}
 
     /* Cat badge colours */
     .cat-sop{background:#eff6ff;color:#1d4ed8}
@@ -403,7 +418,33 @@
         </div>
         <div class="form-group">
           <label class="form-label">內容 *</label>
-          <textarea class="form-textarea" id="fContent" placeholder="輸入文章內容…" style="min-height:300px"></textarea>
+          <div class="editor-toolbar">
+            <button type="button" class="toolbar-btn" onclick="openTableEditor()" title="插入表格">
+              <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
+              插入表格
+            </button>
+          </div>
+          <textarea class="form-textarea" id="fContent" placeholder="輸入文章內容…" style="min-height:280px"></textarea>
+        </div>
+
+        <!-- 表格編輯器 Modal -->
+        <div id="tableEditorModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:800;display:none;align-items:center;justify-content:center">
+          <div style="background:#fff;border-radius:12px;padding:24px;width:700px;max-width:95vw;max-height:85vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.2)">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+              <div style="font-size:15px;font-weight:700">視覺化表格編輯器</div>
+              <div style="display:flex;gap:8px">
+                <button type="button" onclick="teAddCol()" style="background:var(--bg3);border:1px solid var(--line);border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer">＋ 新增欄</button>
+                <button type="button" onclick="teAddRow()" style="background:var(--bg3);border:1px solid var(--line);border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer">＋ 新增列</button>
+                <button type="button" onclick="teDelCol()" style="background:var(--red-bg);border:1px solid var(--red);border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer;color:var(--red)">－ 刪欄</button>
+                <button type="button" onclick="teDelRow()" style="background:var(--red-bg);border:1px solid var(--red);border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer;color:var(--red)">－ 刪列</button>
+              </div>
+            </div>
+            <div id="teTableWrap" style="overflow-x:auto;margin-bottom:16px"></div>
+            <div style="display:flex;gap:8px;justify-content:flex-end">
+              <button type="button" onclick="closeTableEditor()" style="background:var(--bg3);border:1px solid var(--line);border-radius:6px;padding:8px 16px;font-size:13px;cursor:pointer">取消</button>
+              <button type="button" onclick="insertTableToContent()" style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:8px 20px;font-size:13px;font-weight:600;cursor:pointer">插入到內容</button>
+            </div>
+          </div>
         </div>
         <div class="form-group">
           <label class="form-label">編輯摘要（此版本修改說明）</label>
@@ -841,7 +882,15 @@
     document.getElementById('viewSubCat').textContent=sub?'／'+sub.label:'';
     document.getElementById('viewVer').textContent='v'+(d.version||1);
     document.getElementById('viewTitle').textContent=d.title||'';
-    document.getElementById('viewContent').textContent=d.content||'';
+    // 內容：若含 HTML 表格則用 innerHTML，否則用 textContent 避免 XSS
+    const rawContent = d.content||'';
+    const contentEl = document.getElementById('viewContent');
+    if(/<table[\s>]/i.test(rawContent)){
+      // 有表格：安全地只允許表格相關 tag
+      contentEl.innerHTML = rawContent.replace(/<(?!\/?(?:table|thead|tbody|tr|th|td|br)\b)[^>]+>/gi,'');
+    } else {
+      contentEl.textContent = rawContent;
+    }
     document.getElementById('viewCreated').textContent='建立：'+fmtDate(d.createdAt);
     document.getElementById('viewUpdated').textContent='更新：'+fmtDate(d.updatedAt);
     document.getElementById('viewAuthor').textContent=d.author?'作者：'+d.author:'';
@@ -1027,6 +1076,103 @@
       document.getElementById('connLabel').textContent='連線失敗';
       toast('連線失敗：'+err.message,'error');
     });
+  }
+
+  // ── 視覺化表格編輯器 ──────────────────────────────────────
+  let teData = { rows: 3, cols: 3, headers: [], cells: [] };
+
+  function openTableEditor(){
+    teData = {
+      rows: 3, cols: 3,
+      headers: ['欄位一','欄位二','欄位三'],
+      cells: [['','',''],['','',''],['','','']]
+    };
+    renderTeTable();
+    document.getElementById('tableEditorModal').style.display='flex';
+  }
+
+  function closeTableEditor(){
+    document.getElementById('tableEditorModal').style.display='none';
+  }
+
+  function renderTeTable(){
+    const wrap = document.getElementById('teTableWrap');
+    let html = '<table class="te-table"><thead><tr>';
+    for(let c=0;c<teData.cols;c++){
+      html += `<th><input value="${esc(teData.headers[c]||'')}" placeholder="標題${c+1}" oninput="teData.headers[${c}]=this.value"/></th>`;
+    }
+    html += '</tr></thead><tbody>';
+    for(let r=0;r<teData.rows;r++){
+      html += '<tr>';
+      for(let c=0;c<teData.cols;c++){
+        html += `<td><input value="${esc((teData.cells[r]&&teData.cells[r][c])||'')}" placeholder="" oninput="if(!teData.cells[${r}])teData.cells[${r}]=[];teData.cells[${r}][${c}]=this.value"/></td>`;
+      }
+      html += '</tr>';
+    }
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+  }
+
+  function teAddCol(){
+    teData.cols++;
+    teData.headers.push('欄位'+(teData.cols));
+    teData.cells.forEach(r=>r.push(''));
+    renderTeTable();
+  }
+
+  function teAddRow(){
+    teData.rows++;
+    teData.cells.push(Array(teData.cols).fill(''));
+    renderTeTable();
+  }
+
+  function teDelCol(){
+    if(teData.cols<=1){ toast('至少保留一欄','error'); return; }
+    teData.cols--;
+    teData.headers.pop();
+    teData.cells.forEach(r=>r.pop());
+    renderTeTable();
+  }
+
+  function teDelRow(){
+    if(teData.rows<=1){ toast('至少保留一列','error'); return; }
+    teData.rows--;
+    teData.cells.pop();
+    renderTeTable();
+  }
+
+  function insertTableToContent(){
+    // 先同步目前 input 值
+    const wrap = document.getElementById('teTableWrap');
+    wrap.querySelectorAll('thead input').forEach((inp,c)=>{ teData.headers[c]=inp.value; });
+    wrap.querySelectorAll('tbody tr').forEach((tr,r)=>{
+      tr.querySelectorAll('input').forEach((inp,c)=>{
+        if(!teData.cells[r]) teData.cells[r]=[];
+        teData.cells[r][c]=inp.value;
+      });
+    });
+
+    // 轉成 HTML 表格字串插入內容
+    let tbl = '\n<table>\n<thead>\n<tr>';
+    teData.headers.forEach(h=>{ tbl+=`<th>${h||''}</th>`; });
+    tbl += '</tr>\n</thead>\n<tbody>\n';
+    for(let r=0;r<teData.rows;r++){
+      tbl += '<tr>';
+      for(let c=0;c<teData.cols;c++){
+        tbl += `<td>${(teData.cells[r]&&teData.cells[r][c])||''}</td>`;
+      }
+      tbl += '</tr>\n';
+    }
+    tbl += '</tbody>\n</table>\n';
+
+    const ta = document.getElementById('fContent');
+    const start = ta.selectionStart;
+    const end   = ta.selectionEnd;
+    ta.value = ta.value.slice(0,start) + tbl + ta.value.slice(end);
+    ta.selectionStart = ta.selectionEnd = start + tbl.length;
+    ta.focus();
+    closeTableEditor();
+    toast('✓ 表格已插入','success');
   }
 
   init();
