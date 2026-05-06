@@ -777,7 +777,19 @@
     }).join('');
   }
 
-  function handleSearch(){ renderList(); }
+  function handleSearch(){
+    const q = document.getElementById('searchInput').value.trim();
+    if(!q && activeFilter.cat==='all'){
+      // 搜尋清空時回到首頁
+      showHome(); return;
+    }
+    if(q){
+      activeFilter={cat:'all', sub:null};
+      renderTree();
+    }
+    renderList(); renderListPanel();
+    show('list');
+  }
 
   function renderList(){
     const q=document.getElementById('searchInput').value.toLowerCase().trim();
